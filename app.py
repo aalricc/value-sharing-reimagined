@@ -5,17 +5,37 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 import random # Added for simulating account age
 
+# Add CSV handling
+import os
+
 st.set_page_config(page_title="FairShare – Creator Rewards", layout="wide")
 
 # -----------------------------
 # Initialize session state
 # -----------------------------
 if "creators" not in st.session_state:
-    st.session_state.creators = pd.DataFrame([
-        {"Creator": "Alice", "Views": 1200, "Likes": 300, "Shares": 10, "Points": 120},
-        {"Creator": "Bob", "Views": 800, "Likes": 120, "Shares": 8, "Points": 90},
-        {"Creator": "Charlie", "Views": 600, "Likes": 75, "Shares": 5, "Points": 80},
-    ])
+    # Load creators from CSV
+    if os.path.exists("tiktok_creators.csv"):
+        st.session_state.creators = pd.read_csv("tiktok_creators.csv")
+        st.success("✅ Loaded 100 TikTok creators from database!")
+    else:
+        st.error("❌ tiktok_creators.csv not found! Please create the database file.")
+        # Fallback to minimal creators
+        st.session_state.creators = pd.DataFrame([
+            {"Creator": "Alice", "Views": 1200, "Likes": 300, "Shares": 10, "Points": 120},
+        ])
+
+# Initialize viewers database
+if "viewers" not in st.session_state:
+    if os.path.exists("tiktok_viewers.csv"):
+        st.session_state.viewers = pd.read_csv("tiktok_viewers.csv")
+        st.success("✅ Loaded 100 TikTok viewers from database!")
+    else:
+        st.error("❌ tiktok_viewers.csv not found! Please create the database file.")
+        # Fallback to minimal viewers
+        st.session_state.viewers = pd.DataFrame([
+            {"Viewer": "viewer_1", "Account_Type": "new", "Total_Gifts": 0, "Last_Gift_Time": "", "Trust_Level": "new"}
+        ])
 
 # Initialize transactions
 if "transactions" not in st.session_state:
@@ -78,19 +98,52 @@ def get_account_age_category(account_creation_date):
     else:
         return "old"
 
+# Function to get viewer profile from database
+def get_viewer_profile(viewer_name):
+    if viewer_name in st.session_state.viewers["Viewer"].values:
+        viewer_data = st.session_state.viewers[st.session_state.viewers["Viewer"] == viewer_name].iloc[0]
+        return {
+            "account_type": viewer_data["Account_Type"],
+            "total_gifts": viewer_data["Total_Gifts"],
+            "trust_level": viewer_data["Trust_Level"]
+        }
+    else:
+        # Create new viewer profile
+        new_viewer = pd.DataFrame([{
+            "Viewer": viewer_name,
+            "Account_Type": "new",
+            "Total_Gifts": 0,
+            "Last_Gift_Time": "",
+            "Trust_Level": "new"
+        }])
+        st.session_state.viewers = pd.concat([st.session_state.viewers, new_viewer], ignore_index=True)
+        return {"account_type": "new", "total_gifts": 0, "trust_level": "new"}
+
 # Function to calculate user risk profile
 def calculate_user_risk_profile(viewer_name):
     if viewer_name not in st.session_state.user_risk_profiles:
-        # Simulate account creation date (in real app, this would come from TikTok API)
-        account_creation = datetime.now(ZoneInfo("Asia/Singapore")) - timedelta(days=random.randint(1, 365))
+        # Get viewer data from database
+        viewer_profile = get_viewer_profile(viewer_name)
+        
+        # Simulate account creation date based on account type
+        if viewer_profile["account_type"] == "new":
+            days_old = random.randint(1, 30)
+        elif viewer_profile["account_type"] == "existing":
+            days_old = random.randint(31, 180)
+        elif viewer_profile["account_type"] == "verified":
+            days_old = random.randint(181, 365)
+        else:  # creator
+            days_old = random.randint(365, 1095)
+        
+        account_creation = datetime.now(ZoneInfo("Asia/Singapore")) - timedelta(days=days_old)
         
         st.session_state.user_risk_profiles[viewer_name] = {
             "first_seen": datetime.now(ZoneInfo("Asia/Singapore")),
             "account_creation": account_creation,
-            "verification_status": random.choice(["unverified", "verified", "creator"]),  # Simulated
-            "total_gifts": 0,
+            "verification_status": viewer_profile["account_type"],
+            "total_gifts": viewer_profile["total_gifts"],
             "flagged_count": 0,
-            "trust_level": "new",
+            "trust_level": viewer_profile["trust_level"],
             "last_gift_time": None
         }
     
@@ -141,10 +194,74 @@ def get_dynamic_thresholds(viewer_name):
     }
 
 # -----------------------------
-# Sidebar: Input form
+# Sidebar: Enhanced Creator & Viewer Management
 # -----------------------------
+st.sidebar.header(" Database Management")
+
+# Database status
+col1, col2 = st.sidebar.columns(2)
+col1.metric("Creators", len(st.session_state.creators))
+col2.metric("Viewers", len(st.session_state.viewers))
+
+# Creator management
+with st.sidebar.expander("➕ Add New Creator", expanded=False):
+    new_creator_name = st.text_input("Creator Name", key="new_creator_name")
+    col1, col2 = st.columns(2)
+    new_views = col1.number_input("Views", min_value=0, value=0, key="new_views")
+    new_likes = col2.number_input("Likes", min_value=0, value=0, key="new_likes")
+    new_shares = st.number_input("Shares", min_value=0, value=0, key="new_shares")
+    
+    if st.button("➕ Add Creator", key="add_creator_btn"):
+        if new_creator_name.strip():
+            if new_creator_name not in st.session_state.creators["Creator"].values:
+                new_creator = pd.DataFrame([{
+                    "Creator": new_creator_name.strip(),
+                    "Views": new_views,
+                    "Likes": new_likes,
+                    "Shares": new_shares,
+                    "Points": 0
+                }])
+                st.session_state.creators = pd.concat([st.session_state.creators, new_creator], ignore_index=True)
+                
+                # Recalculate engagement scores and fair rewards
+                st.session_state.creators["Engagement Score"] = st.session_state.creators.apply(engagement_score, axis=1)
+                total_engagement = st.session_state.creators["Engagement Score"].sum()
+                st.session_state.creators["Fair Reward %"] = (st.session_state.creators["Engagement Score"] / total_engagement) * 100
+                
+                st.success(f"✅ Creator '{new_creator_name}' added! Total creators: {len(st.session_state.creators)}")
+                st.rerun()
+            else:
+                st.error("❌ Creator name already exists!")
+        else:
+            st.error("❌ Please enter a creator name!")
+
+# CSV management
+with st.sidebar.expander("📁 Database Management", expanded=False):
+    if st.button("💾 Save All Data"):
+        st.session_state.creators.to_csv("tiktok_creators.csv", index=False)
+        st.session_state.viewers.to_csv("tiktok_viewers.csv", index=False)
+        st.success("✅ All data saved to CSV files!")
+    
+    if st.button("🔄 Reload from Database"):
+        if os.path.exists("tiktok_creators.csv") and os.path.exists("tiktok_viewers.csv"):
+            st.session_state.creators = pd.read_csv("tiktok_creators.csv")
+            st.session_state.viewers = pd.read_csv("tiktok_viewers.csv")
+            
+            # Recalculate engagement scores and fair rewards
+            st.session_state.creators["Engagement Score"] = st.session_state.creators.apply(engagement_score, axis=1)
+            total_engagement = st.session_state.creators["Engagement Score"].sum()
+            st.session_state.creators["Fair Reward %"] = (st.session_state.creators["Engagement Score"] / total_engagement) * 100
+            
+            st.success("✅ Data reloaded from database!")
+            st.rerun()
+        else:
+            st.error("❌ Database files not found!")
+
+st.sidebar.markdown("---")
+
+# Enhanced points input form
 st.sidebar.header("Send Points to Creator")
-viewer_name = st.sidebar.text_input("Viewer Name", value="viewer_1")
+viewer_name = st.sidebar.selectbox("Select Viewer", st.session_state.viewers["Viewer"].tolist())
 creator_name = st.sidebar.selectbox("Select Creator", st.session_state.creators["Creator"].tolist())
 points = st.sidebar.number_input("Points to Send", min_value=1, max_value=100000, value=100, step=10)
 send = st.sidebar.button("💸 Send Points")
@@ -352,4 +469,31 @@ if st.sidebar.checkbox("Show User Profiles"):
         st.sidebar.write(f"  - Verification: {profile.get('verification_status', 'N/A')}")
         st.sidebar.write(f"  - Total Gifts: {profile.get('total_gifts', 0)}")
         st.sidebar.write("---")
+
+# Add this debug section after your CSV loading code
+st.sidebar.markdown("---")
+st.sidebar.subheader("🐛 Debug Database Loading")
+
+# Debug creators loading
+if st.sidebar.checkbox("Show Creators Debug Info"):
+    st.sidebar.write("**Creators Database:**")
+    st.sidebar.write(f"Total Creators: {len(st.session_state.creators)}")
+    st.sidebar.write(f"First 3 Creators: {st.session_state.creators['Creator'].head(3).tolist()}")
+    st.sidebar.write(f"Columns: {list(st.session_state.creators.columns)}")
+    st.sidebar.write("---")
+
+# Debug viewers loading
+if st.sidebar.checkbox("Show Viewers Debug Info"):
+    st.sidebar.write("**Viewers Database:**")
+    st.sidebar.write(f"Total Viewers: {len(st.session_state.viewers)}")
+    st.sidebar.write(f"First 3 Viewers: {st.session_state.viewers['Viewer'].head(3).tolist()}")
+    st.sidebar.write(f"Columns: {list(st.session_state.viewers.columns)}")
+    st.sidebar.write("---")
+
+# Debug file existence
+if st.sidebar.checkbox("Show File Status"):
+    st.sidebar.write("**File Status:**")
+    st.sidebar.write(f"creators.csv exists: {os.path.exists('tiktok_creators.csv')}")
+    st.sidebar.write(f"viewers.csv exists: {os.path.exists('tiktok_viewers.csv')}")
+    st.sidebar.write("---")
 
