@@ -33,9 +33,11 @@ class SidebarManager:
             
             if st.button("🔍 Analyze Creator", type="primary", key="analyze_btn"):
                 if analyze_name:
-                    # Use CreatorAnalyzer to analyze (we'll update this next)
+                    # Use CreatorAnalyzer to analyze with creators_df parameter
                     analysis_result = self.creator_analyzer.analyze_creator(
-                        analyze_name, analyze_views, analyze_likes, analyze_shares, analyze_points, creators
+                        analyze_name, analyze_views, analyze_likes, analyze_shares, analyze_points,
+                        comments=0, saves=0, video_duration=None, content_category=None, is_trending=False,
+                        creators_df=creators  # ADD THIS PARAMETER!
                     )
                     
                     # Store analysis data
@@ -58,7 +60,7 @@ class SidebarManager:
             
             creator_name = st.selectbox(
                 "Select Creator", 
-                options=creators["Creator"].tolist(),
+                options=creators["Creator"].unique().tolist(),  # Use .unique() to remove duplicates
                 key="creator_select"
             )
             

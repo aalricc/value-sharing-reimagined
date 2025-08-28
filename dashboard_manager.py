@@ -95,8 +95,13 @@ class DashboardManager:
         # Calculate updated creator points from transactions
         updated_creators = self.calculate_creator_points_from_transactions(transactions, creators)
         
-        # Create tabs for organisation - ADDING NEW TAB 5!
-        tab1, tab2, tab3, tab4, tab5 = st.tabs(["Reward Dashboard", "Engagement & Fairness", "🛡️ Compliance & AML", "🏥 System Health", "📊 Creator Analytics"])
+        # Create tabs with updated names
+        tab1, tab2, tab3, tab4 = st.tabs([
+            "🏆 Reward Dashboard", 
+            "🎯 Quality & Fairness",  # CHANGED: More accurate title
+            "🛡️ Compliance & AML", 
+            "🏥 System Health"
+        ])
         
         with tab1:
             # Two columns: Leaderboard and Transaction History (main focus)
@@ -543,65 +548,7 @@ class DashboardManager:
             </div>
             """, unsafe_allow_html=True)
             
-            # Calculate quality scores for top creators
-            top_creators = creators.head(10)  # Top 10 creators
-            quality_results = []
-            
-            for _, creator in top_creators.iterrows():
-                quality_result = st.session_state.content_quality_analyzer.calculate_content_quality_score(
-                    creator, transactions
-                )
-                quality_results.append({
-                    'Creator': creator['Creator'],
-                    'Quality Score': quality_result['total_quality_score'],
-                    'Tier': quality_result['quality_tier'],
-                    'Multiplier': quality_result['quality_multiplier'],
-                    'Engagement': quality_result['engagement_quality'],
-                    'Consistency': quality_result['consistency_quality'],
-                    'Growth': quality_result['growth_quality']
-                })
-            
-            # Display quality scores in a beautiful table
-            quality_df = pd.DataFrame(quality_results)
-            
-            # Create quality score table with TikTok styling
-            st.markdown("**🏆 Content Quality Rankings**")
-            
-            # Display quality scores
-            for _, row in quality_df.iterrows():
-                tier_color = {
-                    'Diamond': '#FFD700',  # Gold
-                    'Gold': '#FFA500',      # Orange
-                    'Silver': '#C0C0C0',   # Silver
-                    'Bronze': '#CD7F32',   # Bronze
-                    'Standard': '#00F2EA'  # Cyan
-                }
-                
-                st.markdown(f"""
-                <div style="
-                    background: linear-gradient(90deg, {tier_color.get(row['Tier'], '#00F2EA')}, rgba(255,255,255,0.1));
-                    color: white;
-                    padding: 12px;
-                    border-radius: 10px;
-                    margin: 8px 0;
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                ">
-                    <div>
-                        <strong>{row['Creator']}</strong>
-                        <span style="margin-left: 10px; opacity: 0.8;">{row['Tier']} Tier</span>
-                    </div>
-                    <div style="text-align: right;">
-                        <div style="font-size: 18px; font-weight: bold;">{row['Quality Score']}/100</div>
-                        <div style="font-size: 12px; opacity: 0.8;">{row['Multiplier']}x Rewards</div>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-            
-            st.markdown("---")
-            
-            # NEW: Add transparency section showing how calculations work
+             # NEW: Add transparency section showing how calculations work
             with st.expander("🔍 How Quality Scores Are Calculated", expanded=False):
                 st.markdown("""
                 <div style="
@@ -807,8 +754,64 @@ class DashboardManager:
                 automated and based on objective metrics, eliminating bias and ensuring fairness.
                 """)
             
-            # Continue with your existing engagement metrics...
+            # Calculate quality scores for top creators
+            top_creators = creators.head(10)  # Top 10 creators
+            quality_results = []
             
+            for _, creator in top_creators.iterrows():
+                quality_result = st.session_state.content_quality_analyzer.calculate_content_quality_score(
+                    creator, transactions
+                )
+                quality_results.append({
+                    'Creator': creator['Creator'],
+                    'Quality Score': quality_result['total_quality_score'],
+                    'Tier': quality_result['quality_tier'],
+                    'Multiplier': quality_result['quality_multiplier'],
+                    'Engagement': quality_result['engagement_quality'],
+                    'Consistency': quality_result['consistency_quality'],
+                    'Growth': quality_result['growth_quality']
+                })
+            
+            # Display quality scores in a beautiful table
+            quality_df = pd.DataFrame(quality_results)
+            
+            # Create quality score table with TikTok styling
+            st.markdown("**🏆 Content Quality Rankings**")
+            
+            # Display quality scores
+            for _, row in quality_df.iterrows():
+                tier_color = {
+                    'Diamond': '#FFD700',  # Gold
+                    'Gold': '#FFA500',      # Orange
+                    'Silver': '#C0C0C0',   # Silver
+                    'Bronze': '#CD7F32',   # Bronze
+                    'Standard': '#00F2EA'  # Cyan
+                }
+                
+                st.markdown(f"""
+                <div style="
+                    background: linear-gradient(90deg, {tier_color.get(row['Tier'], '#00F2EA')}, rgba(255,255,255,0.1));
+                    color: white;
+                    padding: 12px;
+                    border-radius: 10px;
+                    margin: 8px 0;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                ">
+                    <div>
+                        <strong>{row['Creator']}</strong>
+                        <span style="margin-left: 10px; opacity: 0.8;">{row['Tier']} Tier</span>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 18px; font-weight: bold;">{row['Quality Score']}/100</div>
+                        <div style="font-size: 12px; opacity: 0.8;">{row['Multiplier']}x Rewards</div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            st.markdown("---")
+                       
             # Create a beautiful TikTok-themed table header
             st.markdown("""
             <div style="
@@ -825,156 +828,159 @@ class DashboardManager:
             </div>
             """, unsafe_allow_html=True)
             
-            # Display engagement metrics with TikTok styling
-            engagement_df = creators[["Creator", "Views", "Likes", "Shares", "Engagement Score", "Fair Reward %"]].copy()
-            engagement_df = engagement_df.sort_values("Engagement Score", ascending=False).reset_index(drop=True)
-            engagement_df.index = engagement_df.index + 1
-            engagement_df.index.name = "Rank"
+            # Create two columns for side-by-side layout - ADJUST WIDTHS
+            col_table, col_chart = st.columns([1.2, 0.8])  # Table gets more space, chart gets less
             
-            # Create a beautiful table with TikTok colors
-            st.markdown("""
-            <div style="
-                background: white;
-                border-radius: 15px;
-                overflow: hidden;
-                box-shadow: 0 4px 20px rgba(255, 0, 80, 0.15);
-                margin: 20px 0;
-                width: 100%;
-            ">
-                <table style="width: 100%; border-collapse: collapse; font-family: Arial, sans-serif;">
-                    <thead>
-                        <tr style="background: linear-gradient(90deg, #FF0050, #00F2EA); color: white;">
-                            <th style="padding: 15px; text-align: center; font-weight: 600; border: none; min-width: 60px;">Rank</th>
-                            <th style="padding: 15px; text-align: left; font-weight: 600; border: none; min-width: 120px;">Creator</th>
-                            <th style="padding: 15px; text-align: center; font-weight: 600; border: none; min-width: 100px;">Views</th>
-                            <th style="padding: 15px; text-align: center; font-weight: 600; border: none; min-width: 80px;">Likes</th>
-                            <th style="padding: 15px; text-align: center; font-weight: 600; border: none; min-width: 80px;">Shares</th>
-                            <th style="padding: 15px; text-align: center; font-weight: 600; border: none; min-width: 140px;">Engagement Score</th>
-                            <th style="padding: 15px; text-align: center; font-weight: 600; border: none; min-width: 120px;">Fair Reward %</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            """, unsafe_allow_html=True)
-            
-            # Display top 10 creators with alternating row colors
-            for idx, (_, creator) in enumerate(engagement_df.head(10).iterrows()):
-                row_color = "#f8f9fa" if idx % 2 == 0 else "#ffffff"
-                border_color = "#FF0050" if idx % 2 == 0 else "#00F2EA"
+            with col_table:
+                # Display engagement metrics with TikTok styling
+                engagement_df = creators[["Creator", "Views", "Likes", "Shares", "Engagement Score", "Fair Reward %"]].copy()
+                engagement_df = engagement_df.sort_values("Engagement Score", ascending=False).reset_index(drop=True)
+                engagement_df.index = engagement_df.index + 1
+                engagement_df.index.name = "Rank"
                 
-                st.markdown(f"""
-                    <tr style="background: {row_color};">
-                        <td style="padding: 12px 15px; border-bottom: 1px solid #e9ecef; text-align: center; font-weight: 600; color: #FF0050; min-width: 60px;">
-                            #{idx+1}
-                        </td>
-                        <td style="padding: 12px 15px; border-bottom: 1px solid #e9ecef; font-weight: 500; min-width: 120px;">
-                            {creator['Creator']}
-                        </td>
-                        <td style="padding: 12px 15px; border-bottom: 1px solid #e9ecef; text-align: center; color: #666; min-width: 100px;">
-                            {creator['Views']:,}
-                        </td>
-                        <td style="padding: 12px 15px; border-bottom: 1px solid #e9ecef; text-align: center; color: #666; min-width: 80px;">
-                            {creator['Likes']:,}
-                        </td>
-                        <td style="padding: 12px 15px; border-bottom: 1px solid #e9ecef; text-align: center; color: #666; min-width: 80px;">
-                            {creator['Shares']:,}
-                        </td>
-                        <td style="padding: 12px 15px; border-bottom: 1px solid #e9ecef; text-align: center; font-weight: 600; color: #00F2EA; min-width: 140px;">
-                            {creator['Engagement Score']:,}
-                        </td>
-                        <td style="padding: 12px 15px; border-bottom: 1px solid #e9ecef; text-align: center; min-width: 120px;">
-                            <span style="
-                                background: {'#FF0050' if idx < 3 else '#00F2EA' if idx < 6 else '#10B981'};
-                                color: white;
-                                padding: 4px 8px;
-                                border-radius: 12px;
-                                font-size: 12px;
-                                font-weight: 500;
-                                display: inline-block;
-                                min-width: 60px;
-                            ">
-                                {creator['Fair Reward %']:.2f}%
-                            </span>
-                        </td>
-                    </tr>
+                # Create a beautiful table with TikTok colors - FIXED WIDTHS
+                st.markdown("""
+                <div style="
+                    background: white;
+                    border-radius: 15px;
+                    overflow: hidden;
+                    box-shadow: 0 4px 20px rgba(255, 0, 80, 0.15);
+                    margin: 20px 0;
+                    width: 100%;
+                ">
+                    <table style="width: 100%; border-collapse: collapse; font-family: Arial, sans-serif; border-spacing: 0;">
+                        <thead>
+                            <tr style="background: linear-gradient(90deg, #FF0050, #00F2EA); color: white; margin: 0; padding: 0;">
+                                <th style="padding: 15px 10px; text-align: center; font-weight: 600; border-bottom: 1px solid #e9ecef; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; width: 80px;">Rank</th>
+                                <th style="padding: 15px 10px; text-align: center; font-weight: 600; border-bottom: 1px solid #e9ecef; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; width: 150px;">Creator</th>
+                                <th style="padding: 15px 10px; text-align: center; font-weight: 600; border-bottom: 1px solid #e9ecef; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; width: 120px;">Views</th>
+                                <th style="padding: 15px 10px; text-align: center; font-weight: 600; border-bottom: 1px solid #e9ecef; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; width: 100px;">Likes</th>
+                                <th style="padding: 15px 10px; text-align: center; font-weight: 600; border-bottom: 1px solid #e9ecef; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; width: 100px;">Shares</th>
+                                <th style="padding: 15px 10px; text-align: center; font-weight: 600; border-bottom: 1px solid #e9ecef; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; width: 140px;">Engagement Score</th>
+                                <th style="padding: 15px 10px; text-align: center; font-weight: 600; border-bottom: 1px solid #e9ecef; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; width: 120px;">Fair Reward %</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                """, unsafe_allow_html=True)
+                
+                # Display top 10 creators with alternating row colors - FIXED WIDTHS
+                for idx, (_, creator) in enumerate(engagement_df.head(10).iterrows()):
+                    row_color = "#f8f9fa" if idx % 2 == 0 else "#ffffff"
+                    
+                    st.markdown(f"""
+                        <tr style="background: {row_color}; height: 50px;">
+                            <td style="padding: 15px 10px; border-bottom: 1px solid #e9ecef; text-align: center; font-weight: 600; color: #FF0050; width: 80px; vertical-align: middle; font-size: 13px; margin: 0; border-left: none; border-right: none;">
+                                #{idx+1}
+                            </td>
+                            <td style="padding: 15px 10px; border-bottom: 1px solid #e9ecef; font-weight: 500; width: 150px; vertical-align: middle; font-size: 13px; margin: 0; border-left: none; border-right: none;">
+                                {creator['Creator']}
+                            </td>
+                            <td style="padding: 15px 10px; border-bottom: 1px solid #e9ecef; text-align: center; color: #666; width: 120px; vertical-align: middle; font-size: 13px; margin: 0; border-left: none; border-right: none;">
+                                {creator['Views']:,}
+                            </td>
+                            <td style="padding: 15px 10px; border-bottom: 1px solid #e9ecef; text-align: center; color: #666; width: 100px; vertical-align: middle; font-size: 13px; margin: 0; border-left: none; border-right: none;">
+                                {creator['Likes']:,}
+                            </td>
+                            <td style="padding: 15px 10px; border-bottom: 1px solid #e9ecef; text-align: center; color: #666; width: 100px; vertical-align: middle; font-size: 13px; margin: 0; border-left: none; border-right: none;">
+                                {creator['Shares']:,}
+                            </td>
+                            <td style="padding: 15px 10px; border-bottom: 1px solid #e9ecef; text-align: center; font-weight: 600; color: #00F2EA; width: 140px; vertical-align: middle; font-size: 13px; margin: 0; border-left: none; border-right: none;">
+                                {creator['Engagement Score']:,}
+                            </td>
+                            <td style="padding: 15px 10px; border-bottom: 1px solid #e9ecef; text-align: center; width: 120px; vertical-align: middle; font-size: 13px; margin: 0; border-left: none; border-right: none;">
+                                <span style="
+                                    background: {'#FF0050' if idx < 3 else '#00F2EA' if idx < 6 else '#10B981'};
+                                    color: white;
+                                    padding: 4px 8px;
+                                    border-radius: 12px;
+                                    font-size: 11px;
+                                    font-weight: 600;
+                                    display: inline-block;
+                                    min-width: 55px;
+                                    text-align: center;
+                                ">
+                                    {creator['Fair Reward %']:.2f}%
+                                </span>
+                            </td>
+                        </tr>
+                    """, unsafe_allow_html=True)
+                
+                st.markdown("""
+                        </tbody>
+                    </table>
+                </div>
                 """, unsafe_allow_html=True)
             
-            st.markdown("""
-                    </tbody>
-                </table>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            # Beautiful Engagement Score Bar Chart
-            st.markdown("""
-            <div style="
-                background: linear-gradient(135deg, #FF0050, #00F2EA);
-                color: white;
-                padding: 15px;
-                border-radius: 15px;
-                margin: 30px 0 20px 0;
-                text-align: center;
-                box-shadow: 0 4px 20px rgba(255, 0, 80, 0.3);
-            ">
-                <h3 style="margin: 0;">📈 Engagement Score Bar Chart</h3>
-                <p style="margin: 5px 0 0 0; opacity: 0.9;">Visual representation of creator performance</p>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            # Create a beautiful bar chart with TikTok colors
-            top_10_creators = engagement_df.head(10)
-            
-            fig3 = px.bar(
-                top_10_creators,
-                x="Creator",
-                y="Engagement Score",
-                title="",
-                color="Engagement Score",
-                color_continuous_scale=["#FF0050", "#FF6B35", "#00F2EA", "#8B5CF6", "#10B981"],
-                text="Engagement Score"
-            )
-            
-            fig3.update_traces(
-                texttemplate="%{text:,}",
-                textposition="outside",
-                textfont_size=10,
-                textfont_color="white",
-                marker=dict(
-                    line=dict(color="white", width=2),
-                    cornerradius=8
+            with col_chart:
+                # Beautiful Engagement Score Bar Chart - CLEAN VERSION
+                st.markdown("""
+                <div style="
+                    background: linear-gradient(135deg, #FF0050, #00F2EA);
+                    color: white;
+                    padding: 12px;
+                    border-radius: 15px;
+                    margin: 20px 0;
+                    text-align: center;
+                    box-shadow: 0 4px 20px rgba(255, 0, 80, 0.3);
+                ">
+                    <h3 style="margin: 0; font-size: 16px;">📈 Engagement Score Bar Chart</h3>
+                    <p style="margin: 3px 0 0 0; opacity: 0.9; font-size: 12px;">Visual representation of creator performance</p>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # Create a beautiful bar chart with TikTok colors - OPTIMIZED FOR COLUMN
+                top_10_creators = engagement_df.head(10)
+                
+                fig3 = px.bar(
+                    top_10_creators,
+                    x="Creator",
+                    y="Engagement Score",
+                    title="",
+                    color="Engagement Score",
+                    color_continuous_scale=["#FF0050", "#FF6B35", "#00F2EA", "#8B5CF6", "#10B981"],
+                    text="Engagement Score"
                 )
-            )
-            
-            fig3.update_layout(
-                height=500,
-                paper_bgcolor='rgba(0,0,0,0)',
-                plot_bgcolor='rgba(0,0,0,0)',
-                margin=dict(t=0, b=100, l=50, r=50),
-                xaxis=dict(
-                    title="",
-                    tickangle=-45,
-                    tickfont=dict(color="white", size=12),
-                    gridcolor="rgba(255,255,255,0.1)"
-                ),
-                yaxis=dict(
-                    title="",
-                    tickfont=dict(color="white", size=12),
-                    gridcolor="rgba(255,255,255,0.1)"
-                ),
-                coloraxis_colorbar=dict(
-                    title="",
-                    tickfont=dict(color="white"),
-                    outlinecolor="white"
+                
+                fig3.update_traces(
+                    texttemplate="%{text:,}",
+                    textposition="outside",
+                    textfont_size=8,
+                    textfont_color="white",
+                    marker=dict(
+                        line=dict(color="white", width=1),
+                        cornerradius=6
+                    )
                 )
-            )
-            
-            st.plotly_chart(fig3, use_container_width=True, key="engagement_chart")
-            
+                
+                fig3.update_layout(
+                    height=350,
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    plot_bgcolor='rgba(0,0,0,0)',
+                    margin=dict(t=0, b=60, l=30, r=20),
+                    xaxis=dict(
+                        title="",
+                        tickangle=-45,
+                        tickfont=dict(color="white", size=8),
+                        gridcolor="rgba(255,255,255,0.1)"
+                    ),
+                    yaxis=dict(
+                        title="",
+                        tickfont=dict(color="white", size=8),
+                        gridcolor="rgba(255,255,255,0.1)"
+                    ),
+                    coloraxis_colorbar=dict(
+                        title="",
+                        tickfont=dict(color="white", size=8),
+                        outlinecolor="white"
+                    )
+                )
+                
+                st.plotly_chart(fig3, use_container_width=True, key="engagement_chart")
+        
         with tab3:
             self.create_compliance_dashboard(transactions, creators)
         with tab4:
             self.create_system_health_dashboard(creators, transactions)
-        with tab5:
-            self.create_creator_analytics_dashboard(creators, transactions)
 
     def create_creator_analytics_dashboard(self, creators, transactions):
         """Create the Creator Analytics Dashboard for performance tracking and forecasting"""
@@ -1025,13 +1031,13 @@ class DashboardManager:
             <table style="width: 100%; border-collapse: collapse; font-family: Arial, sans-serif;">
                 <thead>
                     <tr style="background: linear-gradient(90deg, #FF0050, #00F2EA); color: white;">
-                        <th style="padding: 15px; text-align: center; font-weight: 600; border: none; min-width: 60px;">Rank</th>
-                        <th style="padding: 15px; text-align: left; font-weight: 600; border: none; min-width: 120px;">Creator</th>
-                        <th style="padding: 15px; text-align: center; font-weight: 600; border: none; min-width: 100px;">Views</th>
-                        <th style="padding: 15px; text-align: center; font-weight: 600; border: none; min-width: 80px;">Likes</th>
-                        <th style="padding: 15px; text-align: center; font-weight: 600; border: none; min-width: 80px;">Shares</th>
-                        <th style="padding: 15px; text-align: center; font-weight: 600; border: none; min-width: 140px;">Engagement Score</th>
-                        <th style="padding: 15px; text-align: center; font-weight: 600; border: none; min-width: 120px;">Fair Reward %</th>
+                        <th style="padding: 15px; text-align: center; font-weight: 600; border-bottom: 1px solid #e9ecef; min-width: 60px;">Rank</th>
+                        <th style="padding: 15px; text-align: left; font-weight: 600; border-bottom: 1px solid #e9ecef; min-width: 120px;">Creator</th>
+                        <th style="padding: 15px; text-align: center; font-weight: 600; border-bottom: 1px solid #e9ecef; min-width: 100px;">Views</th>
+                        <th style="padding: 15px; text-align: center; font-weight: 600; border-bottom: 1px solid #e9ecef; min-width: 80px;">Likes</th>
+                        <th style="padding: 15px; text-align: center; font-weight: 600; border-bottom: 1px solid #e9ecef; min-width: 80px;">Shares</th>
+                        <th style="padding: 15px; text-align: center; font-weight: 600; border-bottom: 1px solid #e9ecef; min-width: 140px;">Engagement Score</th>
+                        <th style="padding: 15px; text-align: center; font-weight: 600; border-bottom: 1px solid #e9ecef; min-width: 120px;">Fair Reward %</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -1295,6 +1301,7 @@ class DashboardManager:
                 
                 # Pro tip
                 st.info("💡 **Pro Tip:** Higher engagement rates earn higher bonuses!")
+                st.info("💡 **Curious about the details on how TikTok Revenue Sharing works?:** Find out more in  'Quality & Fairness'  and  'Revenue'  setion")
 
             # Detailed breakdown in an expander
             with st.expander("📊 Detailed Earnings Breakdown", expanded=False):
@@ -1619,7 +1626,7 @@ class DashboardManager:
                 st.error("Please enter a creator name")
 
     def calculate_creator_points_from_transactions(self, transactions, creators):
-        """Calculate total points for each creator from transaction history"""
+        """Calculate total points for each creator from transaction history + CSV points"""
         if transactions.empty:
             return creators
         
@@ -1629,15 +1636,16 @@ class DashboardManager:
         # Group transactions by creator and sum points
         creator_totals = transactions.groupby('creator')['points'].sum().reset_index()
         
-        # Update creator points with ONLY transaction totals (don't add to CSV points)
+        # Update creator points by ADDING transaction points to CSV points (not replacing)
         for _, row in creator_totals.iterrows():
             creator_name = row['creator']
             transaction_points = row['points']
             
             # Find the creator in the creators DataFrame
             if creator_name in updated_creators['Creator'].values:
-                # Set points to transaction total only (not CSV + transaction)
-                updated_creators.loc[updated_creators['Creator'] == creator_name, 'Points'] = transaction_points
+                # ADD transaction points to existing CSV points (not replace)
+                current_points = updated_creators.loc[updated_creators['Creator'] == creator_name, 'Points'].iloc[0]
+                updated_creators.loc[updated_creators['Creator'] == creator_name, 'Points'] = current_points + transaction_points
         
         return updated_creators
 
@@ -1793,10 +1801,12 @@ class DashboardManager:
             health_score = performance_report['system_health']['total_health_score']
             health_status = performance_report['system_health']['health_status']
             
+            # REMOVED: delta_color parameter - let Streamlit auto-color
             st.metric(
                 label="System Health Score",
                 value=f"{health_score}/100",
                 delta=health_status
+                # Streamlit will automatically color based on the status text
             )
         
         with col2:
@@ -1882,4 +1892,7 @@ class DashboardManager:
         
         # Refresh button
         if st.button("🔄 Refresh System Status", type="primary"):
+            # NEW: Refresh demo state for realistic growth
+            if hasattr(monitor, 'refresh_demo_state'):
+                monitor.refresh_demo_state()
             st.rerun()
