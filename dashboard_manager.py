@@ -106,8 +106,18 @@ class DashboardManager:
                 # Creators (Leaderboard)
                 st.subheader("🏆 Creator Leaderboard")
                 
-                # Get top creators (top 15 instead of all 100)
-                top_creators = updated_creators.head(15)
+                # Get top creators ranked by POINTS (top 15 instead of all 100)
+                # Group by Creator name and sum their points to avoid duplicates
+                creators_grouped = updated_creators.groupby('Creator').agg({
+                    'Points': 'sum',
+                    'Engagement Score': 'mean',  # Average engagement score for display
+                    'Views': 'sum',
+                    'Likes': 'sum',
+                    'Shares': 'sum'
+                }).reset_index()
+                
+                # Sort by total points and get top 15
+                top_creators = creators_grouped.sort_values("Points", ascending=False).head(15)
                 
                 # Create a more visually appealing leaderboard
                 for idx, (_, creator) in enumerate(top_creators.iterrows()):
@@ -126,7 +136,7 @@ class DashboardManager:
                         ">
                             <h3 style="margin: 0; font-size: 24px;">🥇 {creator['Creator']}</h3>
                             <p style="margin: 5px 0; font-size: 18px; font-weight: bold;">{creator['Points']:,} points</p>
-                            <p style="margin: 0; font-size: 14px; opacity: 0.8;">Engagement: {creator['Engagement Score']:,}</p>
+                            <p style="margin: 0; font-size: 14px; opacity: 0.8;">Engagement: {creator['Engagement Score']:.1f}</p>
                         </div>
                         """, unsafe_allow_html=True)
                     elif idx == 1:
@@ -143,7 +153,7 @@ class DashboardManager:
                         ">
                             <h4 style="margin: 0; font-size: 20px;">🥈 {creator['Creator']}</h4>
                             <p style="margin: 3px 0; font-size: 16px; font-weight: bold;">{creator['Points']:,} points</p>
-                            <p style="margin: 0; font-size: 12px; opacity: 0.8;">Engagement: {creator['Engagement Score']:,}</p>
+                            <p style="margin: 0; font-size: 12px; opacity: 0.8;">Engagement: {creator['Engagement Score']:.1f}</p>
                         </div>
                         """, unsafe_allow_html=True)
                     elif idx == 2:
@@ -160,7 +170,7 @@ class DashboardManager:
                         ">
                             <h4 style="margin: 0; font-size: 18px;">🥉 {creator['Creator']}</h4>
                             <p style="margin: 2px 0; font-size: 14px; font-weight: bold;">{creator['Points']:,} points</p>
-                            <p style="margin: 0; font-size: 11px; opacity: 0.8;">Engagement: {creator['Engagement Score']:,}</p>
+                            <p style="margin: 0; font-size: 11px; opacity: 0.8;">Engagement: {creator['Engagement Score']:.1f}</p>
                         </div>
                         """, unsafe_allow_html=True)
                     else:
@@ -1214,27 +1224,27 @@ class DashboardManager:
             st.metric("Points Earned", f"{analysis_data['points']:,}")
 
         # NEW: Earnings Information
-        if 'estimated_earnings' in analysis_data:
+        if 'estimated_earnings' in analysis_data and analysis_data['estimated_earnings'] is not None:
             st.markdown("---")
             st.markdown("**💰 Earnings Analysis**")
             
             earnings = analysis_data['estimated_earnings']
             col1, col2, col3 = st.columns(3)
             with col1:
-                st.metric("Quality Score", f"{earnings['quality_score']:.0f}/100")
+                st.metric("Quality Score", f"{earnings.get('quality_score', 0):.0f}/100")
             with col2:
-                st.metric("Engagement Rate", f"{earnings['engagement_rate']:.1f}%")
+                st.metric("Engagement Rate", f"{earnings.get('engagement_rate', 0):.1f}%")
             with col3:
-                st.metric("Total Monthly Earnings", f"${earnings['total_earnings']:.2f}")
+                st.metric("Total Monthly Earnings", f"${earnings.get('total_earnings', 0):.2f}")
             
             # Second row of earnings metrics
             col1, col2, col3 = st.columns(3)
             with col1:
-                st.metric("Base Earnings", f"${earnings['base_earnings']:.2f}")
+                st.metric("Base Earnings", f"${earnings.get('base_earnings', 0):.2f}")
             with col2:
-                st.metric("Quality Bonus", f"${earnings['quality_bonus']:.2f}")
+                st.metric("Quality Bonus", f"${earnings.get('quality_bonus', 0):.2f}")
             with col3:
-                st.metric("Views Bonus", f"${earnings['views_bonus']:.2f}")
+                st.metric("Views Bonus", f"${earnings.get('views_bonus', 0):.2f}")
             
             # Earnings breakdown explanation - Using Streamlit native formatting
             st.markdown("---")
@@ -1245,26 +1255,26 @@ class DashboardManager:
                 # Base calculations row
                 col1, col2 = st.columns(2)
                 with col1:
-                    st.info(f"**Base Rate:** ${earnings['base_conversion_rate']:.3f} per point")
+                    st.info(f"**Base Rate:** ${earnings.get('base_conversion_rate', 0):.3f} per point")
                 with col2:
-                    st.info(f"**Your Points:** {analysis_data['points']:,} × ${earnings['base_conversion_rate']:.3f} = ${earnings['base_earnings']:.2f}")
+                    st.info(f"**Your Points:** {analysis_data['points']:,} × ${earnings.get('base_conversion_rate', 0):.3f} = ${earnings.get('base_earnings', 0):.2f}")
                 
                 # Quality metrics row
                 col1, col2 = st.columns(2)
                 with col1:
-                    st.success(f"**Quality Score:** {earnings['quality_score']:.0f}/100")
-                    st.caption(f"Engagement Rate: {earnings['engagement_rate']:.1f}%")
+                    st.success(f"**Quality Score:** {earnings.get('quality_score', 0):.0f}/100")
+                    st.caption(f"Engagement Rate: {earnings.get('engagement_rate', 0):.1f}%")
                 with col2:
-                    st.success(f"**Quality Multiplier:** {earnings['quality_multiplier']:.2f}x")
+                    st.success(f"**Quality Multiplier:** {earnings.get('quality_multiplier', 1):.2f}x")
                     st.caption("1x to 2x based on engagement")
                 
                 # Bonus calculations row
                 col1, col2 = st.columns(2)
                 with col1:
-                    st.warning(f"**Quality Bonus:** ${earnings['quality_bonus']:.2f}")
+                    st.warning(f"**Quality Bonus:** ${earnings.get('quality_bonus', 0):.2f}")
                     st.caption("Reward for great engagement")
                 with col2:
-                    st.warning(f"**Views Bonus:** ${earnings['views_bonus']:.2f}")
+                    st.warning(f"**Views Bonus:** ${earnings.get('views_bonus', 0):.2f}")
                     st.caption("Small bonus for reach")
                 
                 # Final total in a highlighted box
@@ -1281,7 +1291,7 @@ class DashboardManager:
                 ">
                     <h3 style="margin: 0; color: white;">🎯 Final Total: ${total_earnings}</h3>
                 </div>
-                """.format(total_earnings=f"{earnings['total_earnings']:.2f}"), unsafe_allow_html=True)
+                """.format(total_earnings=f"{earnings.get('total_earnings', 0):.2f}"), unsafe_allow_html=True)
                 
                 # Pro tip
                 st.info("💡 **Pro Tip:** Higher engagement rates earn higher bonuses!")
@@ -1293,25 +1303,25 @@ class DashboardManager:
                 
                 1. **Base Earnings from Points:**
                    - Points earned: {analysis_data['points']:,}
-                   - Conversion rate: ${earnings['base_conversion_rate']:.3f} per point
-                   - Base earnings: {analysis_data['points']:,} × ${earnings['base_conversion_rate']:.3f} = ${earnings['base_earnings']:.2f}
+                   - Conversion rate: ${earnings.get('base_conversion_rate', 0):.3f} per point
+                   - Base earnings: {analysis_data['points']:,} × ${earnings.get('base_conversion_rate', 0):.3f} = ${earnings.get('base_earnings', 0):.2f}
                 
                 2. **Quality Bonus Calculation:**
-                   - Engagement rate: {earnings['engagement_rate']:.1f}%
-                   - Quality score: {earnings['quality_score']:.0f}/100
-                   - Multiplier: {earnings['quality_multiplier']:.2f}x
-                   - Quality bonus: ${earnings['base_earnings']:.2f} × ({earnings['quality_multiplier']:.2f} - 1) = ${earnings['quality_bonus']:.2f}
+                   - Engagement rate: {earnings.get('engagement_rate', 0):.1f}%
+                   - Quality score: {earnings.get('quality_score', 0):.0f}/100
+                   - Multiplier: {earnings.get('quality_multiplier', 1):.2f}x
+                   - Quality bonus: ${earnings.get('base_earnings', 0):.2f} × ({earnings.get('quality_multiplier', 1):.2f} - 1) = ${earnings.get('quality_bonus', 0):.2f}
                 
                 3. **Views Bonus:**
                    - Views: {analysis_data['views']:,}
                    - Bonus rate: $50 per million views
-                   - Views bonus: ({analysis_data['views']:,} ÷ 1,000,000) × $50 = ${earnings['views_bonus']:.2f}
+                   - Views bonus: ({analysis_data['views']:,} ÷ 1,000,000) × $50 = ${earnings.get('views_bonus', 0):.2f}
                 
                 4. **Total Earnings:**
-                   - Base earnings: ${earnings['base_earnings']:.2f}
-                   - Quality bonus: ${earnings['quality_bonus']:.2f}
-                   - Views bonus: ${earnings['views_bonus']:.2f}
-                   - **Total: ${earnings['total_earnings']:.2f}**
+                   - Base earnings: ${earnings.get('base_earnings', 0):.2f}
+                   - Quality bonus: ${earnings.get('quality_bonus', 0):.2f}
+                   - Views bonus: ${earnings.get('views_bonus', 0):.2f}
+                   - **Total: ${earnings.get('total_earnings', 0):.2f}**
                 """)
 
         # Add transparent explanation with better styling - Updated to match final total gradient
