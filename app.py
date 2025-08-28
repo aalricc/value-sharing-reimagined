@@ -10,6 +10,8 @@ from loading_manager import LoadingManager
 from ui_manager import UIManager
 from sidebar_manager import SidebarManager
 from data_manager import DataManager
+from content_quality_analyzer import ContentQualityAnalyzer  # NEW!
+from system_monitor import SystemMonitor
 
 # Initialize UI and Loading managers
 ui_manager = UIManager()
@@ -46,6 +48,9 @@ if "sidebar_manager" not in st.session_state:
 
 if "data_manager" not in st.session_state:
     st.session_state.data_manager = DataManager(st.session_state.db_manager)
+
+if "content_quality_analyzer" not in st.session_state:
+    st.session_state.content_quality_analyzer = ContentQualityAnalyzer()
 
 # Initialize data and user profiles
 creators, viewers, transactions = st.session_state.data_manager.initialize_data()

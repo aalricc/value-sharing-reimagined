@@ -26,7 +26,6 @@ class DatabaseManager:
         # Load viewers
         if os.path.exists("tiktok_viewers.csv"):
             self.viewers = pd.read_csv("tiktok_viewers.csv")
-            # st.success("✅ Loaded 100 TikTok viewers from database!")
         else:
             st.error("❌ tiktok_viewers.csv not found!")
             self.viewers = pd.DataFrame([
@@ -132,11 +131,76 @@ class DatabaseManager:
             for i in range(max_transactions):
                 for viewer_txs in all_viewer_transactions:
                     if i < len(viewer_txs):
-                        historical_transactions.append(viewer_txs[i])
+                        # MODIFY: Update historical transaction dates to be more recent
+                        transaction = viewer_txs[i].copy()
+                        
+                        # Convert old timestamp to recent date (within last 2 months)
+                        old_timestamp = pd.to_datetime(transaction['timestamp'])
+                        days_offset = random.randint(1, 60)  # 1-60 days ago
+                        hours_offset = random.randint(0, 23)
+                        minutes_offset = random.randint(0, 59)
+                        
+                        new_timestamp = pd.Timestamp.now() - pd.Timedelta(days=days_offset, hours=hours_offset, minutes=minutes_offset)
+                        transaction['timestamp'] = new_timestamp.strftime("%Y-%m-%d %H:%M")
+                        
+                        historical_transactions.append(transaction)
             
             # Shuffle the final result for extra randomness
             random.shuffle(historical_transactions)
             
+            # Simple and clean: Just add historical transactions
             self.transactions = pd.concat([self.transactions, pd.DataFrame(historical_transactions)], ignore_index=True)
+            
+            # Generate realistic number of flagged transactions for 900+ total transactions
+            num_flagged = random.randint(5, 20)  # 5-20 flagged transactions (more realistic)
+            flagged_transactions = []
+            
+            for i in range(num_flagged):
+                # Randomly select viewer and creator
+                random_viewer = random.choice(self.viewers['Viewer'].tolist())
+                random_creator = random.choice(self.creators['Creator'].tolist())
+                
+                # Random points
+                points = random.choice([1800, 2200, 2500, 2800, 3200, 3800, 4500, 5000])
+                
+                # Simple risk level
+                risk_level = random.choice(['low', 'medium', 'high'])
+                
+                # Simple reason
+                reason = random.choice([
+                    "Above threshold",
+                    "Suspicious pattern",
+                    "Multiple transactions"
+                ])
+                
+                # KEY: Ensure at least 1 flagged transaction appears in top 3
+                if i == 0:  # First flagged transaction gets extremely recent timestamp (top 3)
+                    days_ago = 0  # Today
+                    hours_ago = random.randint(0, 12)  # Within last 12 hours
+                    minutes_ago = random.randint(0, 59)
+                elif i == 1:  # Second flagged transaction gets very recent timestamp (top 20)
+                    days_ago = random.randint(1, 3)  # Very recent (1-3 days ago)
+                else:  # Remaining flagged transactions get older timestamps (scattered)
+                    days_ago = random.randint(10, 60)  # Older (10-60 days ago)
+                
+                hours_ago = random.randint(0, 23)
+                minutes_ago = random.randint(0, 59)
+                
+                timestamp = (pd.Timestamp.now() - pd.Timedelta(days=days_ago, hours=hours_ago, minutes=minutes_ago)).strftime("%Y-%m-%d %H:%M")
+                
+                flagged_transactions.append({
+                    "timestamp": timestamp,
+                    "viewer": random_viewer,
+                    "creator": random_creator,
+                    "points": points,
+                    "flagged": True,
+                    "reason": reason,
+                    "risk_level": risk_level
+                })
+            
+            # Simply add flagged transactions to the end (they'll be sorted by timestamp naturally)
+            flagged_df = pd.DataFrame(flagged_transactions)
+            self.transactions = pd.concat([self.transactions, flagged_df], ignore_index=True)
+            
             return True
         return False

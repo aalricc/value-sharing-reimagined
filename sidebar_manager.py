@@ -25,15 +25,17 @@ class SidebarManager:
             
             # Input fields for analysis
             analyze_name = st.text_input("Creator Name to Analyze", placeholder="e.g., tiktok_username", key="analyze_creator_name")
-            analyze_views = st.number_input("Views", min_value=0, value=1000000, step=100000, key="analyze_views")
-            analyze_likes = st.number_input("Likes", min_value=0, value=100000, step=10000, key="analyze_likes")
-            analyze_shares = st.number_input("Shares", min_value=0, value=10000, step=1000, key="analyze_shares")
+            analyze_views = st.number_input("Views this month", min_value=0, value=1000000, step=100000, key="analyze_views")
+            analyze_likes = st.number_input("Likes this month", min_value=0, value=100000, step=10000, key="analyze_likes")
+            analyze_shares = st.number_input("Shares this month", min_value=0, value=10000, step=1000, key="analyze_shares")
+            # NEW: Add Points input field here
+            analyze_points = st.number_input("Points Earned This Month", min_value=0, value=1000, step=100, key="analyze_points")
             
             if st.button("🔍 Analyze Creator", type="primary", key="analyze_btn"):
                 if analyze_name:
-                    # Use CreatorAnalyzer to analyze
+                    # Use CreatorAnalyzer to analyze (we'll update this next)
                     analysis_result = self.creator_analyzer.analyze_creator(
-                        analyze_name, analyze_views, analyze_likes, analyze_shares, creators
+                        analyze_name, analyze_views, analyze_likes, analyze_shares, analyze_points, creators
                     )
                     
                     # Store analysis data
@@ -76,17 +78,22 @@ class SidebarManager:
                 )
                 
                 # Update our local references
-                creators = result["updated_creators"]
-                transactions = result["updated_transactions"]
+                updated_creators = result["updated_creators"]
+                updated_transactions = result["updated_transactions"]
                 
                 # Update database manager
-                self.db_manager.creators = creators
-                self.db_manager.transactions = transactions
+                self.db_manager.creators = updated_creators
+                self.db_manager.transactions = updated_transactions
+                
+                # IMPORTANT: Update session state for immediate UI refresh
+                st.session_state.creators = updated_creators
+                st.session_state.transactions = updated_transactions
                 
                 if result["flagged"]:
                     st.warning(f"⚠ Transaction flagged: {result['reason']}")
                 else:
                     st.success(f"Sent {points} points to {creator_name}!")
+                    st.rerun()  # Force refresh to show updated leaderboard
     
     def _render_debug_info(self, creators, viewers, transactions, user_risk_profiles):
         """Render the Debug Information section"""

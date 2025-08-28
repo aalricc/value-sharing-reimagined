@@ -1,6 +1,11 @@
 import streamlit as st
-import plotly.express as px
 import pandas as pd
+import plotly.express as px
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
+from system_monitor import SystemMonitor
+from creator_analyzer import CreatorAnalyzer
+from content_quality_analyzer import ContentQualityAnalyzer
 
 class DashboardManager:
     def __init__(self):
@@ -90,8 +95,8 @@ class DashboardManager:
         # Calculate updated creator points from transactions
         updated_creators = self.calculate_creator_points_from_transactions(transactions, creators)
         
-        # Create tabs for organisation
-        tab1, tab2 = st.tabs(["Reward Dashboard", "Engagement & Fairness"])
+        # Create tabs for organisation - ADDING NEW TAB 5!
+        tab1, tab2, tab3, tab4, tab5 = st.tabs(["Reward Dashboard", "Engagement & Fairness", "🛡️ Compliance & AML", "🏥 System Health", "📊 Creator Analytics"])
         
         with tab1:
             # Two columns: Leaderboard and Transaction History (main focus)
@@ -255,7 +260,6 @@ class DashboardManager:
                                 }
                             )
                             
-                            
                  # Add pie chart right below the leaderboard
                 st.markdown("---")  # Add separator
                 st.markdown("""
@@ -285,7 +289,7 @@ class DashboardManager:
                     
                     # Pure TikTok brand colors only
                     tiktok_colors = [
-                        '#FF0050',  # TikTok Pink/Red
+                        '#FF0050',  # TikTok Pink/Reds
                         '#00F2EA',  # TikTok Cyan/Blue
                         '#FF0050',  # Repeat main colors
                         '#00F2EA',  # for more slices
@@ -513,6 +517,288 @@ class DashboardManager:
         with tab2:
             st.subheader("🎯 Creator Engagement Metrics")
             
+            # NEW: Add Content Quality Analysis section
+            st.markdown("""
+            <div style="
+                background: linear-gradient(135deg, #FF0050, #00F2EA);
+                color: white;
+                padding: 15px;
+                border-radius: 15px;
+                margin-bottom: 20px;
+                text-align: center;
+                box-shadow: 0 4px 20px rgba(255, 0, 80, 0.3);
+            ">
+                <h3 style="margin: 0;">🔍 Content Quality Analysis</h3>
+                <p style="margin: 5px 0 0 0; opacity: 0.9;">Advanced creator quality scoring system</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Calculate quality scores for top creators
+            top_creators = creators.head(10)  # Top 10 creators
+            quality_results = []
+            
+            for _, creator in top_creators.iterrows():
+                quality_result = st.session_state.content_quality_analyzer.calculate_content_quality_score(
+                    creator, transactions
+                )
+                quality_results.append({
+                    'Creator': creator['Creator'],
+                    'Quality Score': quality_result['total_quality_score'],
+                    'Tier': quality_result['quality_tier'],
+                    'Multiplier': quality_result['quality_multiplier'],
+                    'Engagement': quality_result['engagement_quality'],
+                    'Consistency': quality_result['consistency_quality'],
+                    'Growth': quality_result['growth_quality']
+                })
+            
+            # Display quality scores in a beautiful table
+            quality_df = pd.DataFrame(quality_results)
+            
+            # Create quality score table with TikTok styling
+            st.markdown("**🏆 Content Quality Rankings**")
+            
+            # Display quality scores
+            for _, row in quality_df.iterrows():
+                tier_color = {
+                    'Diamond': '#FFD700',  # Gold
+                    'Gold': '#FFA500',      # Orange
+                    'Silver': '#C0C0C0',   # Silver
+                    'Bronze': '#CD7F32',   # Bronze
+                    'Standard': '#00F2EA'  # Cyan
+                }
+                
+                st.markdown(f"""
+                <div style="
+                    background: linear-gradient(90deg, {tier_color.get(row['Tier'], '#00F2EA')}, rgba(255,255,255,0.1));
+                    color: white;
+                    padding: 12px;
+                    border-radius: 10px;
+                    margin: 8px 0;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                ">
+                    <div>
+                        <strong>{row['Creator']}</strong>
+                        <span style="margin-left: 10px; opacity: 0.8;">{row['Tier']} Tier</span>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 18px; font-weight: bold;">{row['Quality Score']}/100</div>
+                        <div style="font-size: 12px; opacity: 0.8;">{row['Multiplier']}x Rewards</div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            st.markdown("---")
+            
+            # NEW: Add transparency section showing how calculations work
+            with st.expander("🔍 How Quality Scores Are Calculated", expanded=False):
+                st.markdown("""
+                <div style="
+                    background: linear-gradient(135deg, #FF0050, #00F2EA);
+                    color: white;
+                    padding: 15px;
+                    border-radius: 15px;
+                    margin-bottom: 20px;
+                    text-align: center;
+                    box-shadow: 0 4px 20px rgba(255, 0, 80, 0.3);
+                ">
+                    <h4 style="margin: 0;">📊 Quality Score Formula</h4>
+                    <p style="margin: 5px 0 0 0; opacity: 0.9;">Transparent calculation breakdown</p>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # Quality Score Breakdown - FIXED LAYOUT
+                st.markdown("**🎯 Quality Factors & Weights:**")
+                st.markdown("""
+                - **Engagement Quality (40%)**: How well audience engages with content
+                - **Consistency Quality (25%)**: How consistent creator performance is
+                - **Growth Quality (20%)**: How much creator is improving over time
+                - **Content Quality (15%)**: Content type and duration bonuses
+                """)
+                
+                st.markdown("---")
+                
+                # Engagement Quality Section
+                col1, col2 = st.columns([1, 1])
+                with col1:
+                    st.markdown("**📊 Engagement Quality (40%):**")
+                    st.markdown("""
+                    How well your audience engages with your content.
+                    
+                    **Formula:**
+                    Engagement Rate = (Likes + Shares) / Views
+                    Engagement Score = min(100, Engagement Rate × 1000)
+                    
+                    **Example:**
+                    50,000 likes + 2,000 shares / 1,000,000 views = 0.052 = 52.0/100
+                    """)
+                
+                with col2:
+                    st.markdown("**📊 Consistency Quality (25%):**")
+                    st.markdown("""
+                    How consistent your transaction amounts are.
+                    
+                    **Formula:**
+                    Coefficient of Variation = Standard Deviation / Mean
+                    Consistency Score = max(0, 100 - (CV × 100))
+                    
+                    **Example:**
+                    Lower variation = Higher consistency score
+                    """)
+                
+                st.markdown("---")
+                
+                # Growth and Content Quality Section
+                col3, col4 = st.columns([1, 1])
+                with col3:
+                    st.markdown("**📈 Growth Quality (20%):**")
+                    st.markdown("""
+                    How much you're improving over time.
+                    
+                    **Formula:**
+                    Growth Rate = (Recent Avg - Older Avg) / Older Avg
+                    Growth Score = 50 + (Growth Rate × 100)
+                    
+                    **Example:**
+                    Positive growth = Higher score, capped at 100
+                    """)
+                
+                with col4:
+                    st.markdown("**🎬 Content Quality (15%):**")
+                    st.markdown("""
+                    Content type and duration bonuses.
+                    
+                    **Formula:**
+                    Base Score + Future Enhancements
+                    
+                    **Future Features:**
+                    Video duration, audience retention, content category
+                    """)
+                
+                st.markdown("---")
+                
+                # Tier System Explanation
+                st.markdown("**🏆 Tier System & Reward Multipliers:**")
+                
+                tier_col1, tier_col2, tier_col3, tier_col4, tier_col5 = st.columns(5)
+                
+                with tier_col1:
+                    st.markdown("""
+                    <div style="
+                        background: linear-gradient(135deg, #FFD700, #FFA500);
+                        color: white;
+                        padding: 10px;
+                        border-radius: 10px;
+                        text-align: center;
+                        margin: 5px 0;
+                        height: 80px;
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: center;
+                        align-items: center;
+                    ">
+                        <strong>Diamond</strong><br>
+                        90+ Score<br>
+                        <span style="font-size: 18px;">2.0x</span> Rewards
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                with tier_col2:
+                    st.markdown("""
+                    <div style="
+                        background: linear-gradient(135deg, #FFA500, #FF6B35);
+                        color: white;
+                        padding: 10px;
+                        border-radius: 10px;
+                        text-align: center;
+                        margin: 5px 0;
+                        height: 80px;
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: center;
+                        align-items: center;
+                    ">
+                        <strong>Gold</strong><br>
+                        80+ Score<br>
+                        <span style="font-size: 18px;">1.5x</span> Rewards
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                with tier_col3:
+                    st.markdown("""
+                    <div style="
+                        background: linear-gradient(135deg, #C0C0C0, #A0A0A0);
+                        color: white;
+                        padding: 10px;
+                        border-radius: 10px;
+                        text-align: center;
+                        margin: 5px 0;
+                        height: 80px;
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: center;
+                        align-items: center;
+                    ">
+                        <strong>Silver</strong><br>
+                        70+ Score<br>
+                        <span style="font-size: 18px;">1.25x</span> Rewards
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                with tier_col4:
+                    st.markdown("""
+                    <div style="
+                        background: linear-gradient(135deg, #CD7F32, #B8860B);
+                        color: white;
+                        padding: 10px;
+                        border-radius: 10px;
+                        text-align: center;
+                        margin: 5px 0;
+                        height: 80px;
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: center;
+                        align-items: center;
+                    ">
+                        <strong>Bronze</strong><br>
+                        60+ Score<br>
+                        <span style="font-size: 18px;">1.1x</span> Rewards
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                with tier_col5:
+                    st.markdown("""
+                    <div style="
+                        background: linear-gradient(135deg, #00F2EA, #10B981);
+                        color: white;
+                        padding: 10px;
+                        border-radius: 10px;
+                        text-align: center;
+                        margin: 5px 0;
+                        height: 80px;
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: center;
+                        align-items: center;
+                    ">
+                        <strong>Standard</strong><br>
+                        <60 Score<br>
+                        <span style="font-size: 18px;">1.0x</span> Rewards
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                st.markdown("---")
+                
+                # Final transparency note
+                st.info("""
+                **💡 Transparency Note:** This system ensures that creators with higher quality content, 
+                consistent performance, and steady growth receive fair rewards. All calculations are 
+                automated and based on objective metrics, eliminating bias and ensuring fairness.
+                """)
+            
+            # Continue with your existing engagement metrics...
+            
             # Create a beautiful TikTok-themed table header
             st.markdown("""
             <div style="
@@ -627,7 +913,7 @@ class DashboardManager:
             # Create a beautiful bar chart with TikTok colors
             top_10_creators = engagement_df.head(10)
             
-            fig = px.bar(
+            fig3 = px.bar(
                 top_10_creators,
                 x="Creator",
                 y="Engagement Score",
@@ -637,7 +923,7 @@ class DashboardManager:
                 text="Engagement Score"
             )
             
-            fig.update_traces(
+            fig3.update_traces(
                 texttemplate="%{text:,}",
                 textposition="outside",
                 textfont_size=10,
@@ -648,7 +934,7 @@ class DashboardManager:
                 )
             )
             
-            fig.update_layout(
+            fig3.update_layout(
                 height=500,
                 paper_bgcolor='rgba(0,0,0,0)',
                 plot_bgcolor='rgba(0,0,0,0)',
@@ -671,7 +957,217 @@ class DashboardManager:
                 )
             )
             
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig3, use_container_width=True, key="engagement_chart")
+            
+        with tab3:
+            self.create_compliance_dashboard(transactions, creators)
+        with tab4:
+            self.create_system_health_dashboard(creators, transactions)
+        with tab5:
+            self.create_creator_analytics_dashboard(creators, transactions)
+
+    def create_creator_analytics_dashboard(self, creators, transactions):
+        """Create the Creator Analytics Dashboard for performance tracking and forecasting"""
+        st.header("📊 Creator Analytics & Performance Tracking")
+        st.markdown("Track and forecast creator performance, audience demographics, and revenue potential.")
+
+        # Data for analytics
+        analytics_data = {
+            'creators': creators,
+            'transactions': transactions
+        }
+
+        # Display metrics
+        st.subheader("🔗 Key Performance Indicators")
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            total_points = creators["Points"].sum()
+            st.metric("Total Points in System", f"{total_points:,}")
+        with col2:
+            flagged_count = transactions["flagged"].sum() if not transactions.empty else 0
+            st.metric("Flagged Transactions", f"{flagged_count:,}")
+        with col3:
+            total_transactions = len(transactions) if not transactions.empty else 0
+            st.metric("Total Transactions", f"{total_transactions:,}")
+        with col4:
+            total_value = transactions["points"].sum() if not transactions.empty else 0
+            st.metric("Total Value in System", f"{total_value:,} pts")
+
+        st.markdown("---")
+
+        # Engagement Score Trends
+        st.subheader("📈 Engagement Score Trends")
+        engagement_df = creators[["Creator", "Views", "Likes", "Shares", "Engagement Score", "Fair Reward %"]].copy()
+        engagement_df = engagement_df.sort_values("Engagement Score", ascending=False).reset_index(drop=True)
+        engagement_df.index = engagement_df.index + 1
+        engagement_df.index.name = "Rank"
+
+        # Create a beautiful table with TikTok colors
+        st.markdown("""
+        <div style="
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(255, 0, 80, 0.15);
+            margin: 20px 0;
+            width: 100%;
+        ">
+            <table style="width: 100%; border-collapse: collapse; font-family: Arial, sans-serif;">
+                <thead>
+                    <tr style="background: linear-gradient(90deg, #FF0050, #00F2EA); color: white;">
+                        <th style="padding: 15px; text-align: center; font-weight: 600; border: none; min-width: 60px;">Rank</th>
+                        <th style="padding: 15px; text-align: left; font-weight: 600; border: none; min-width: 120px;">Creator</th>
+                        <th style="padding: 15px; text-align: center; font-weight: 600; border: none; min-width: 100px;">Views</th>
+                        <th style="padding: 15px; text-align: center; font-weight: 600; border: none; min-width: 80px;">Likes</th>
+                        <th style="padding: 15px; text-align: center; font-weight: 600; border: none; min-width: 80px;">Shares</th>
+                        <th style="padding: 15px; text-align: center; font-weight: 600; border: none; min-width: 140px;">Engagement Score</th>
+                        <th style="padding: 15px; text-align: center; font-weight: 600; border: none; min-width: 120px;">Fair Reward %</th>
+                    </tr>
+                </thead>
+                <tbody>
+        """, unsafe_allow_html=True)
+        
+        # Display top 10 creators with alternating row colors
+        for idx, (_, creator) in enumerate(engagement_df.head(10).iterrows()):
+            row_color = "#f8f9fa" if idx % 2 == 0 else "#ffffff"
+            border_color = "#FF0050" if idx % 2 == 0 else "#00F2EA"
+            
+            st.markdown(f"""
+                <tr style="background: {row_color};">
+                    <td style="padding: 12px 15px; border-bottom: 1px solid #e9ecef; text-align: center; font-weight: 600; color: #FF0050; min-width: 60px;">
+                        #{idx+1}
+                    </td>
+                    <td style="padding: 12px 15px; border-bottom: 1px solid #e9ecef; font-weight: 500; min-width: 120px;">
+                        {creator['Creator']}
+                    </td>
+                    <td style="padding: 12px 15px; border-bottom: 1px solid #e9ecef; text-align: center; color: #666; min-width: 100px;">
+                        {creator['Views']:,}
+                    </td>
+                    <td style="padding: 12px 15px; border-bottom: 1px solid #e9ecef; text-align: center; color: #666; min-width: 80px;">
+                        {creator['Likes']:,}
+                    </td>
+                    <td style="padding: 12px 15px; border-bottom: 1px solid #e9ecef; text-align: center; color: #666; min-width: 80px;">
+                        {creator['Shares']:,}
+                    </td>
+                    <td style="padding: 12px 15px; border-bottom: 1px solid #e9ecef; text-align: center; font-weight: 600; color: #00F2EA; min-width: 140px;">
+                        {creator['Engagement Score']:,}
+                    </td>
+                    <td style="padding: 12px 15px; border-bottom: 1px solid #e9ecef; text-align: center; min-width: 120px;">
+                        <span style="
+                            background: {'#FF0050' if idx < 3 else '#00F2EA' if idx < 6 else '#10B981'};
+                            color: white;
+                            padding: 4px 8px;
+                            border-radius: 12px;
+                            font-size: 12px;
+                            font-weight: 500;
+                            display: inline-block;
+                            min-width: 60px;
+                        ">
+                            {creator['Fair Reward %']:.2f}%
+                        </span>
+                    </td>
+                </tr>
+            """, unsafe_allow_html=True)
+        
+        st.markdown("""
+                </tbody>
+            </table>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # Engagement Score Bar Chart
+        st.markdown("""
+        <div style="
+            background: linear-gradient(135deg, #FF0050, #00F2EA);
+            color: white;
+            padding: 15px;
+            border-radius: 15px;
+            margin: 30px 0 20px 0;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(255, 0, 80, 0.3);
+        ">
+            <h3 style="margin: 0;">📈 Engagement Score Bar Chart</h3>
+            <p style="margin: 5px 0 0 0; opacity: 0.9;">Visual representation of creator performance</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Create a beautiful bar chart with TikTok colors
+        top_10_creators = engagement_df.head(10)
+        
+        fig2 = px.bar(
+            top_10_creators,
+            x="Creator",
+            y="Engagement Score",
+            title="",
+            color="Engagement Score",
+            color_continuous_scale=["#FF0050", "#FF6B35", "#00F2EA", "#8B5CF6", "#10B981"],
+            text="Engagement Score"
+        )
+        
+        fig2.update_traces(
+            texttemplate="%{text:,}",
+            textposition="outside",
+            textfont_size=10,
+            textfont_color="white",
+            marker=dict(
+                line=dict(color="white", width=2),
+                cornerradius=8
+            )
+        )
+        
+        fig2.update_layout(
+            height=500,
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            margin=dict(t=0, b=100, l=50, r=50),
+            xaxis=dict(
+                title="",
+                tickangle=-45,
+                tickfont=dict(color="white", size=12),
+                gridcolor="rgba(255,255,255,0.1)"
+            ),
+            yaxis=dict(
+                title="",
+                tickfont=dict(color="white", size=12),
+                gridcolor="rgba(255,255,255,0.1)"
+            ),
+            coloraxis_colorbar=dict(
+                title="",
+                tickfont=dict(color="white"),
+                outlinecolor="white"
+            )
+        )
+        
+        st.plotly_chart(fig2, use_container_width=True, key="analytics_chart")
+
+        st.markdown("---")
+
+        # Audience Demographics
+        st.subheader("👥 Audience Demographics")
+        st.info("This section will display audience demographics such as age, gender, location, and platform preferences.")
+        # Placeholder for actual data fetching and plotting
+        st.write("**Data not yet available for this dashboard.**")
+
+        st.markdown("---")
+
+        # Content Performance Comparison
+        st.subheader("📈 Content Performance Comparison")
+        st.info("This section will allow you to compare content performance across different creators.")
+        # Placeholder for actual data fetching and plotting
+        st.write("**Data not yet available for this dashboard.**")
+
+        st.markdown("---")
+
+        # Revenue Forecasting
+        st.subheader("💰 Revenue Forecasting")
+        st.info("This section will provide a forecast for potential monthly earnings based on current performance.")
+        # Placeholder for actual data fetching and plotting
+        st.write("**Data not yet available for this dashboard.**")
+
+        st.markdown("---")
+
+        # Add a final note
+        st.info("💡 **Note**: This analytics dashboard is a work in progress. More features and data will be added over time.")
 
     def display_analysis_results(self, analysis_data, creators):
         """Display creator analysis results in a styled box"""
@@ -697,7 +1193,7 @@ class DashboardManager:
         # Analysis description
         st.write("**See how this creator would perform in our system**")
         
-        # Analysis content
+        # Analysis content - First row: Views, Likes, Shares
         col1, col2, col3 = st.columns(3)
         with col1:
             st.metric("Views", f"{analysis_data['views']:,}")
@@ -708,29 +1204,134 @@ class DashboardManager:
 
         st.markdown("---")
 
-        # Show engagement score and fair reward
-        col1, col2 = st.columns(2)
+        # Second row: Engagement Score, Fair Reward, Points
+        col1, col2, col3 = st.columns(3)
         with col1:
             st.metric("Engagement Score", f"{analysis_data['engagement_score']:,.0f}")
         with col2:
             st.metric("Fair Reward %", f"{analysis_data['fair_reward_percentage']:.2f}%")
+        with col3:
+            st.metric("Points Earned", f"{analysis_data['points']:,}")
 
-        # Add transparent explanation with better styling
+        # NEW: Earnings Information
+        if 'estimated_earnings' in analysis_data:
+            st.markdown("---")
+            st.markdown("**💰 Earnings Analysis**")
+            
+            earnings = analysis_data['estimated_earnings']
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Quality Score", f"{earnings['quality_score']:.0f}/100")
+            with col2:
+                st.metric("Engagement Rate", f"{earnings['engagement_rate']:.1f}%")
+            with col3:
+                st.metric("Total Monthly Earnings", f"${earnings['total_earnings']:.2f}")
+            
+            # Second row of earnings metrics
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Base Earnings", f"${earnings['base_earnings']:.2f}")
+            with col2:
+                st.metric("Quality Bonus", f"${earnings['quality_bonus']:.2f}")
+            with col3:
+                st.metric("Views Bonus", f"${earnings['views_bonus']:.2f}")
+            
+            # Earnings breakdown explanation - Using Streamlit native formatting
+            st.markdown("---")
+            st.markdown("**💰 How Your Earnings Are Calculated**")
+
+            # Create a styled container
+            with st.container():
+                # Base calculations row
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.info(f"**Base Rate:** ${earnings['base_conversion_rate']:.3f} per point")
+                with col2:
+                    st.info(f"**Your Points:** {analysis_data['points']:,} × ${earnings['base_conversion_rate']:.3f} = ${earnings['base_earnings']:.2f}")
+                
+                # Quality metrics row
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.success(f"**Quality Score:** {earnings['quality_score']:.0f}/100")
+                    st.caption(f"Engagement Rate: {earnings['engagement_rate']:.1f}%")
+                with col2:
+                    st.success(f"**Quality Multiplier:** {earnings['quality_multiplier']:.2f}x")
+                    st.caption("1x to 2x based on engagement")
+                
+                # Bonus calculations row
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.warning(f"**Quality Bonus:** ${earnings['quality_bonus']:.2f}")
+                    st.caption("Reward for great engagement")
+                with col2:
+                    st.warning(f"**Views Bonus:** ${earnings['views_bonus']:.2f}")
+                    st.caption("Small bonus for reach")
+                
+                # Final total in a highlighted box
+                st.markdown("---")
+                st.markdown("""
+                <div style="
+                    background: linear-gradient(135deg, #FF0050 0%, #00F2EA 100%);
+                    border-radius: 15px;
+                    padding: 20px;
+                    margin: 20px 0;
+                    color: white;
+                    text-align: center;
+                    box-shadow: 0 8px 25px rgba(255, 0, 80, 0.3);
+                ">
+                    <h3 style="margin: 0; color: white;">🎯 Final Total: ${total_earnings}</h3>
+                </div>
+                """.format(total_earnings=f"{earnings['total_earnings']:.2f}"), unsafe_allow_html=True)
+                
+                # Pro tip
+                st.info("💡 **Pro Tip:** Higher engagement rates earn higher bonuses!")
+
+            # Detailed breakdown in an expander
+            with st.expander("📊 Detailed Earnings Breakdown", expanded=False):
+                st.write(f"""
+                **Step-by-Step Calculation:**
+                
+                1. **Base Earnings from Points:**
+                   - Points earned: {analysis_data['points']:,}
+                   - Conversion rate: ${earnings['base_conversion_rate']:.3f} per point
+                   - Base earnings: {analysis_data['points']:,} × ${earnings['base_conversion_rate']:.3f} = ${earnings['base_earnings']:.2f}
+                
+                2. **Quality Bonus Calculation:**
+                   - Engagement rate: {earnings['engagement_rate']:.1f}%
+                   - Quality score: {earnings['quality_score']:.0f}/100
+                   - Multiplier: {earnings['quality_multiplier']:.2f}x
+                   - Quality bonus: ${earnings['base_earnings']:.2f} × ({earnings['quality_multiplier']:.2f} - 1) = ${earnings['quality_bonus']:.2f}
+                
+                3. **Views Bonus:**
+                   - Views: {analysis_data['views']:,}
+                   - Bonus rate: $50 per million views
+                   - Views bonus: ({analysis_data['views']:,} ÷ 1,000,000) × $50 = ${earnings['views_bonus']:.2f}
+                
+                4. **Total Earnings:**
+                   - Base earnings: ${earnings['base_earnings']:.2f}
+                   - Quality bonus: ${earnings['quality_bonus']:.2f}
+                   - Views bonus: ${earnings['views_bonus']:.2f}
+                   - **Total: ${earnings['total_earnings']:.2f}**
+                """)
+
+        # Add transparent explanation with better styling - Updated to match final total gradient
         st.markdown("""
 <div style="
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 10px;
-    padding: 15px;
-    margin: 15px 0;
+    background: linear-gradient(135deg, #FF0050 0%, #00F2EA 100%);
+    border-radius: 15px;
+    padding: 20px;
+    margin: 20px 0;
     color: white;
     text-align: center;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    box-shadow: 0 8px 25px rgba(255, 0, 80, 0.3);
 ">
-    <h4 style="margin: 0 0 10px 0; color: white;">🔍 How Your Score is Calculated</h4>
-    <p style="margin: 0; font-size: 16px; opacity: 0.95;">
+    <h4 style="margin: 0 0 15px 0; color: white; font-size: 18px;">
+        🔍 How Your Score is Calculated
+    </h4>
+    <p style="margin: 0; font-size: 16px; opacity: 0.95; font-weight: 600;">
         <strong>Engagement Score = 0.3 × Views + Likes + 2 × Shares</strong>
     </p>
-    <p style="margin: 5px 0 0 0; font-size: 14px; opacity: 0.8;">
+    <p style="margin: 10px 0 0 0; font-size: 14px; opacity: 0.9;">
         This formula rewards quality engagement over raw viewership
     </p>
 </div>
@@ -818,7 +1419,7 @@ class DashboardManager:
             ">
             """, unsafe_allow_html=True)
             
-            st.write("** Recommendations:**")
+            st.write("**💡 Recommendations:**")
             if analysis_data['performance_tier'] == "top_10":
                 st.write("• Excellent performance!")
                 st.write("• Consider premium features")
@@ -856,6 +1457,157 @@ class DashboardManager:
 
         st.markdown("</div>", unsafe_allow_html=True)
 
+    def display_enhanced_analysis_results(self, creator_name, analysis_result, views, likes, shares, points):
+        """Display enhanced TikTok-specific analysis results"""
+        st.success(f"✅ Analysis complete for {creator_name}!")
+        
+        # Main metrics
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            st.metric("Views", f"{views:,}")
+        
+        with col2:
+            st.metric("Engagement Score", f"{analysis_result['engagement_quality']:,.0f}")
+        
+        with col3:
+            st.metric("Quality Score", f"{analysis_result['total_quality_score']:.1f}")
+        
+        with col4:
+            st.metric("Quality Tier", analysis_result['quality_tier'])
+        
+        st.markdown("---")
+        
+        # Detailed breakdown
+        col_left, col_right = st.columns([1, 1])
+        
+        with col_left:
+            st.subheader("📊 TikTok Engagement Analysis")
+            
+            # Engagement breakdown
+            engagement_rate = ((likes + shares + analysis_result.get('Comments', 0) + analysis_result.get('Saves', 0)) / views * 100) if views > 0 else 0
+            st.markdown(f"**Overall Engagement Rate**: {engagement_rate:.2f}%")
+            
+            # TikTok-specific insights
+            if engagement_rate >= 8:
+                st.success("🎯 Exceptional engagement! This creator understands TikTok's algorithm")
+            elif engagement_rate >= 5:
+                st.success("✅ Very good engagement rate for TikTok")
+            elif engagement_rate >= 3:
+                st.info("📈 Good engagement, room for improvement")
+            elif engagement_rate >= 2:
+                st.warning("⚠️ Below average engagement for TikTok")
+            else:
+                st.error("🚨 Low engagement - needs content strategy improvement")
+            
+            # Content quality breakdown
+            st.markdown("**Content Quality Breakdown:**")
+            st.markdown(f"• **Base Quality**: {analysis_result['total_quality_score']:.1f}/100")
+            st.markdown(f"• **Video Duration Bonus**: +{analysis_result.get('duration_bonus', 0)} points")
+            st.markdown(f"• **Retention Bonus**: +{analysis_result.get('retention_bonus', 0)} points")
+            st.markdown(f"• **Category Bonus**: +{analysis_result.get('category_bonus', 0)} points")
+        
+        with col_right:
+            st.subheader("🏆 Quality Tier Analysis")
+            
+            # Tier explanation
+            tier_info = {
+                'Diamond': "🌟 Exceptional content quality - Maximum rewards (2.0x multiplier)",
+                'Gold': "🥇 High-quality content - Premium rewards (1.5x multiplier)",
+                'Silver': "🥈 Good content quality - Enhanced rewards (1.25x multiplier)",
+                'Bronze': "🥉 Standard content - Normal rewards (1.1x multiplier)",
+                'Standard': "📱 Basic content - Standard rewards (1.0x multiplier)"
+            }
+            
+            current_tier = analysis_result['quality_tier']
+            st.info(f"**{current_tier} Tier**: {tier_info.get(current_tier, 'Standard tier')}")
+            
+            # Multiplier impact
+            multiplier = analysis_result['quality_multiplier']
+            st.markdown(f"**Reward Multiplier**: {multiplier}x")
+            
+            # Next tier goal
+            if current_tier != 'Diamond':
+                st.markdown("**Next Tier Goal**: Improve content quality to reach higher rewards")
+            
+            # Recommendations
+            st.markdown("**💡 TikTok Optimization Tips:**")
+            if engagement_rate < 5:
+                st.markdown("• Focus on creating shareable content")
+                st.markdown("• Use trending sounds and hashtags")
+                st.markdown("• Engage with your audience in comments")
+            else:
+                st.markdown("• Maintain your high engagement strategy")
+                st.markdown("• Experiment with new content formats")
+                st.markdown("• Collaborate with other creators")
+        
+        st.markdown("---")
+        
+        # Final summary
+        st.subheader("🎯 Final Assessment")
+        
+        # Use simpler string formatting to avoid f-string issues
+        tier_message = f"**{creator_name}** would achieve **{analysis_result['quality_tier']}** tier with **{analysis_result['quality_multiplier']}x** reward multiplier!"
+        st.success(tier_message)
+        
+        # Close button
+        if st.button("❌ Close Analysis", key="close_enhanced_analysis"):
+            st.session_state.show_analysis = False
+            st.rerun()
+
+    def create_creator_analysis_tool(self):
+        """Create the Creator Analysis Tool with TikTok-specific fields"""
+        st.header("🔍 Creator Analysis Tool")
+        st.markdown("Analyze how a creator would perform in our TikTok reward system")
+        
+        # Input fields in columns
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            creator_name = st.text_input("Creator Name", placeholder="Enter creator name")
+            views = st.number_input("Views", min_value=0, value=1000000, step=1000)
+            likes = st.number_input("Likes", min_value=0, value=100000, step=1000)
+            shares = st.number_input("Shares", min_value=0, value=10000, step=100)
+            points = st.number_input("Points Earned", min_value=0, value=1000, step=100)
+        
+        with col2:
+            comments = st.number_input("Comments", min_value=0, value=5000, step=100)
+            saves = st.number_input("Saves", min_value=0, value=2000, step=100)
+            video_duration = st.number_input("Video Duration (minutes)", min_value=0.1, value=2.5, step=0.1)
+            content_category = st.selectbox("Content Category", [
+                "Education", "Tutorial", "Gaming", "Entertainment", "Comedy", 
+                "Dance", "Cooking", "Fitness", "Beauty", "Travel", "Lifestyle",
+                "News", "Technology", "Music", "Art", "Business", "Science", "History"
+            ])
+            is_trending = st.checkbox("Is Trending Content?")
+        
+        # Analysis button
+        if st.button("🔍 Analyze Creator", type="primary"):
+            if creator_name:
+                # Get content quality analyzer (this has the TikTok features we want)
+                if 'content_quality_analyzer' not in st.session_state:
+                    st.session_state.content_quality_analyzer = ContentQualityAnalyzer()
+                
+                # Analyze creator with TikTok metrics using ContentQualityAnalyzer
+                analysis_result = st.session_state.content_quality_analyzer.calculate_content_quality_score(
+                    creator_data={
+                        'Views': views,
+                        'Likes': likes,
+                        'Shares': shares,
+                        'Comments': comments,
+                        'Saves': saves,
+                        'Video_Duration': video_duration,
+                        'Content_Category': content_category,
+                        'Is_Trending': is_trending
+                    },
+                    transaction_history=[]  # Empty for new analysis
+                )
+                
+                # Display results
+                self.display_enhanced_analysis_results(creator_name, analysis_result, views, likes, shares, points)
+            else:
+                st.error("Please enter a creator name")
+
     def calculate_creator_points_from_transactions(self, transactions, creators):
         """Calculate total points for each creator from transaction history"""
         if transactions.empty:
@@ -867,17 +1619,257 @@ class DashboardManager:
         # Group transactions by creator and sum points
         creator_totals = transactions.groupby('creator')['points'].sum().reset_index()
         
-        # Update creator points with transaction totals
+        # Update creator points with ONLY transaction totals (don't add to CSV points)
         for _, row in creator_totals.iterrows():
             creator_name = row['creator']
             transaction_points = row['points']
             
             # Find the creator in the creators DataFrame
             if creator_name in updated_creators['Creator'].values:
-                # Get current CSV points
-                current_csv_points = updated_creators.loc[updated_creators['Creator'] == creator_name, 'Points'].iloc[0]
-                # Add transaction points to CSV points
-                total_points = current_csv_points + transaction_points
-                updated_creators.loc[updated_creators['Creator'] == creator_name, 'Points'] = total_points
+                # Set points to transaction total only (not CSV + transaction)
+                updated_creators.loc[updated_creators['Creator'] == creator_name, 'Points'] = transaction_points
         
         return updated_creators
+
+    def create_compliance_dashboard(self, transactions, creators):
+        """Create the AML and compliance monitoring dashboard"""
+        st.subheader("🛡️ Compliance & AML Dashboard")
+                
+        # Risk metrics overview - Use only columns that exist
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            # Check if risk_level exists, otherwise use flagged
+            if "risk_level" in transactions.columns:
+                high_risk_count = len(transactions[transactions["risk_level"] == "high"]) if not transactions.empty else 0
+            else:
+                high_risk_count = len(transactions[transactions["flagged"] == True]) if not transactions.empty else 0
+            st.metric("🚨 High Risk", high_risk_count, delta=f"+{high_risk_count}" if high_risk_count > 0 else None)
+        
+        with col2:
+            suspicious_count = len(transactions[transactions["flagged"] == True]) if not transactions.empty else 0
+            st.metric("⚠️ Flagged", suspicious_count, delta=f"+{suspicious_count}" if suspicious_count > 0 else None)
+        
+        with col3:
+            total_transactions = len(transactions) if not transactions.empty else 0
+            compliance_rate = ((total_transactions - suspicious_count) / total_transactions * 100) if total_transactions > 0 else 100
+            st.metric("✅ Compliance", f"{compliance_rate:.1f}%", delta=f"{compliance_rate:.1f}%")
+        
+        with col4:
+            total_value = transactions["points"].sum() if not transactions.empty else 0
+            st.metric("💰 Total Value", f"{total_value:,} pts", delta=f"+{total_value:,}")
+        
+        st.markdown("---")
+        
+        # Risk distribution chart - Only if risk_level exists
+        if not transactions.empty and "risk_level" in transactions.columns:
+            chart_col1, chart_col2 = st.columns([2, 1])  # FIXED: Unique names
+            
+            with chart_col1:
+                st.subheader("📊 Transaction Risk Distribution")
+                risk_distribution = transactions["risk_level"].value_counts()
+                
+                # Create pie chart with TikTok colors
+                fig = px.pie(
+                    values=risk_distribution.values, 
+                    names=risk_distribution.index,
+                    color_discrete_sequence=['#00F2EA', '#FF6B35', '#FF0050'],  # TikTok colors
+                    title=""
+                )
+                
+                fig.update_traces(
+                    textposition='inside',
+                    textinfo='percent+label',
+                    textfont_size=14,
+                    textfont_color='white',
+                    marker=dict(line=dict(color='white', width=2))
+                )
+                
+                fig.update_layout(
+                    height=400,
+                    showlegend=True,
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    plot_bgcolor='rgba(0,0,0,0)',
+                    margin=dict(t=0, b=0, l=0, r=0)
+                )
+                
+                st.plotly_chart(fig, use_container_width=True)
+            
+            with chart_col2:  # FIXED: Use chart_col2
+                st.subheader("🔄 Risk Level Breakdown")
+                for risk_level, count in risk_distribution.items():
+                    if risk_level == "low":
+                        st.success(f"🟢 **{risk_level.title()}**: {count} transactions")
+                    elif risk_level == "medium":
+                        st.warning(f"🟡 **{risk_level.title()}**: {count} transactions")
+                    else:
+                        st.error(f"🔴 **{risk_level.title()}**: {count} transactions")
+        else:
+            st.info("📊 Risk level data will appear after new transactions are created with risk assessment.")
+        
+        st.markdown("---")
+        
+        # Recent flagged transactions
+        if not transactions.empty:
+            st.subheader("🚨 Recent Flagged Transactions")
+            flagged_transactions = transactions[transactions["flagged"] == True].head(10)
+            
+            if not flagged_transactions.empty:
+                for _, tx in flagged_transactions.iterrows():
+                    tx_col1, tx_col2, tx_col3 = st.columns(3)  # FIXED: Unique names
+                    with tx_col1:
+                        if "risk_level" in tx:
+                            st.write(f"**Risk Level:** {tx['risk_level']}")
+                        else:
+                            st.write(f"**Status:** {'Flagged' if tx['flagged'] else 'Clean'}")
+                    with tx_col2:
+                        st.write(f"**Reason:** {tx.get('reason', 'N/A')}")
+                    with tx_col3:
+                        st.write(f"**Time:** {tx['timestamp']}")
+            else:
+                st.success("🎉 No flagged transactions! System is clean.")
+        
+        st.markdown("---")
+        
+        # Compliance score and system health
+        st.subheader("🏥 System Health & Compliance Score")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            # Calculate overall compliance score
+            if not transactions.empty:
+                total_tx = len(transactions)
+                clean_tx = len(transactions[transactions["flagged"] == False])
+                compliance_score = (clean_tx / total_tx) * 100
+                
+                st.metric("🛡️ Overall Compliance", f"{compliance_score:.1f}%")
+                
+                if compliance_score >= 90:
+                    st.success("Excellent compliance rate!")
+                elif compliance_score >= 75:
+                    st.warning("Good compliance rate")
+                else:
+                    st.error("Compliance needs attention")
+        
+        with col2:
+            st.info("""
+            **🔒 Security Features:**
+            • Real-time fraud detection
+            • Dynamic risk thresholds
+            • Transaction monitoring
+            • AML compliance checks
+            • 24/7 system monitoring
+            """)
+
+    def create_system_health_dashboard(self, creators, transactions):
+        """Create the System Health & Performance Monitoring dashboard"""
+        st.header("🏥 System Health & Performance Monitoring")
+        st.markdown("Real-time monitoring of system health, fund safety, and performance metrics")
+        
+        # Initialize System Monitor
+        if 'system_monitor' not in st.session_state:
+            st.session_state.system_monitor = SystemMonitor()
+        
+        monitor = st.session_state.system_monitor
+        
+        # Generate performance report
+        performance_report = monitor.generate_performance_report(transactions, creators)
+        
+        # System Health Overview
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            health_score = performance_report['system_health']['total_health_score']
+            health_status = performance_report['system_health']['health_status']
+            
+            st.metric(
+                label="System Health Score",
+                value=f"{health_score}/100",
+                delta=health_status
+            )
+        
+        with col2:
+            fund_flow = performance_report['fund_flow']['total_flow']
+            st.metric(
+                label="24h Fund Flow",
+                value=f"{fund_flow:,} points",
+                delta="Active"
+            )
+        
+        with col3:
+            transaction_count = performance_report['fund_flow']['transaction_count']
+            st.metric(
+                label="24h Transactions",
+                value=f"{transaction_count}",
+                delta="Processing"
+            )
+        
+        with col4:
+            avg_size = performance_report['fund_flow']['avg_transaction_size']
+            st.metric(
+                label="Avg Transaction",
+                value=f"{avg_size:,.0f} points",
+                delta="Normal"
+            )
+        
+        st.markdown("---")
+        
+        # Detailed Health Analysis
+        col_health, col_fund = st.columns([1, 1])
+        
+        with col_health:
+            st.subheader("🔍 System Health Breakdown")
+            
+            health_factors = performance_report['system_health']['health_factors']
+            for factor_name, score, weight in health_factors:
+                percentage = weight * 100
+                st.markdown(f"**{factor_name}** ({percentage:.0f}% weight)")
+                
+                # Create progress bar
+                progress_color = "green" if score >= 80 else "orange" if score >= 60 else "red"
+                st.progress(score / 100, text=f"{score:.1f}/100")
+                
+                # Show recommendations if score is low
+                if score < 80:
+                    for rec in performance_report['system_health']['recommendations']:
+                        if factor_name.lower() in rec.lower():
+                            st.warning(rec)
+                
+                st.markdown("---")
+        
+        with col_fund:
+            st.subheader("💰 Fund Flow Monitoring")
+            
+            # Fund flow status
+            fund_status = performance_report['fund_flow']['status']
+            st.info(f"**Status**: {fund_status}")
+            
+            # Anomalies
+            anomalies = performance_report['fund_flow']['anomalies']
+            if anomalies:
+                st.error("🚨 **Detected Anomalies:**")
+                for anomaly in anomalies:
+                    st.markdown(f"• {anomaly}")
+            else:
+                st.success("✅ **No anomalies detected** - Fund flow is normal")
+            
+            # Fund flow details
+            st.markdown("**24-Hour Summary:**")
+            st.markdown(f"• **Total Flow**: {performance_report['fund_flow']['total_flow']:,} points")
+            st.markdown(f"• **Transaction Count**: {performance_report['fund_flow']['transaction_count']}")
+            st.markdown(f"• **Average Size**: {performance_report['fund_flow']['avg_transaction_size']:,.0f} points")
+        
+        st.markdown("---")
+        
+        # Executive Summary
+        st.subheader("📊 Executive Summary")
+        summary = performance_report['summary']
+        st.info(summary)
+        
+        # Last updated
+        st.caption(f"Last updated: {performance_report['timestamp']}")
+        
+        # Refresh button
+        if st.button("🔄 Refresh System Status", type="primary"):
+            st.rerun()
