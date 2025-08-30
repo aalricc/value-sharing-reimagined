@@ -53,14 +53,14 @@ Creators input engagement metrics → FairShare calculates earnings based on qua
 - **Transparent Reward System**: Clear profit-sharing mechanisms and quality-driven earnings
 
 ## 🔗 Links
-- **GitHub Repository**: https://github.com/YourTeam/FairShare
-- **Demo Video**: https://youtu.be/YourVideoLink
+- **GitHub Repository**: https://github.com/aalricc/value-sharing-reimagined
+- **Demo Video**: https://www.youtube.com/watch?v=XNWJIEDcENI
 
 ##  Quick Start
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/YourTeam/FairShare.git
+   git clone https://github.com/aalricc/value-sharing-reimagined/
    cd FairShare
    ```
 
