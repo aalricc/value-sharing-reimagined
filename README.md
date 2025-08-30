@@ -87,4 +87,4 @@ Creators input engagement metrics → FairShare calculates earnings based on qua
 
 ---
 
-*Built with ❤️ for transparent creator compensation*
+
