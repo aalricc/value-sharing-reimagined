@@ -1249,7 +1249,7 @@ class DashboardManager:
         # NEW: Earnings Information - TIKTOK-STYLE CALCULATION
         if 'estimated_earnings' in analysis_data and analysis_data['estimated_earnings'] is not None:
             st.markdown("---")
-            st.markdown("**💰 Earnings Analysis (TikTok-Style)**")
+            st.markdown("**💰 Earnings Analysis**")
             
             # Get user inputs
             views = analysis_data['views']
@@ -1336,7 +1336,7 @@ class DashboardManager:
             
             # Earnings breakdown explanation with $ signs
             st.markdown("---")
-            st.markdown("**📊 TikTok-Style Earnings Calculation**")
+            st.markdown("**📊 Earnings Calculation**")
             
             # Base earnings row with $ signs
             col1, col2 = st.columns(2)
@@ -1391,11 +1391,11 @@ class DashboardManager:
 
             # Pro tip with $ signs
             st.info("💡 **Pro Tip:** TikTok pays primarily for views, with small bonuses for high engagement!")
-            st.info("💡 **Curious about the details on how TikTok Revenue Sharing works?:** Find out more in the dropbox below or in the 'Quality & Fairness'  and  'Revenue'  setion")
+            st.info("💡 **Curious about the details on how TikTok Revenue Sharing works?:** Find out more in the dropbox below or in the 'Quality & Fairness' setion")
             
             # Detailed breakdown with $ signs - REPLACED WITH BETTER CALCULATION DISPLAY
             with st.expander("🔍 How Your Earnings Are Calculated", expanded=False):
-                st.markdown("**📊 TikTok-Style Earnings Formula**")
+                st.markdown("**📊 Earnings Formula**")
                 
                 # Show the actual calculation steps
                 col1, col2 = st.columns(2)
