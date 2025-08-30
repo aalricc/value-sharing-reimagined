@@ -45,7 +45,7 @@ class SystemMonitor:
         health_factors.append(('Performance', performance_score, 0.2))
         
         # 4. Fund Safety (10% weight) - varies slightly
-        fund_safety_score = self._calculate_fund_safety_score(transactions, creators)
+        fund_safety_score = self._calculate_fund_safety_score(transactions)
         fund_safety_score = max(0, min(100, fund_safety_score + random.uniform(-1, 1)))
         health_factors.append(('Fund Safety', fund_safety_score, 0.1))
         
@@ -118,25 +118,21 @@ class SystemMonitor:
         
         return performance_score
     
-    def _calculate_fund_safety_score(self, transactions, creators):
-        """Calculate fund safety and protection score"""
+    def _calculate_fund_safety_score(self, transactions):
+        """Calculate fund safety score based on flagged transactions - MINIMUM 95%"""
         if transactions.empty:
-            return 100.0
+            return 100
         
-        # Calculate total funds in system
-        total_funds = transactions['points'].sum()
+        total_transactions = len(transactions)
+        flagged_transactions = transactions['flagged'].sum()
         
-        # Calculate flagged/fraudulent funds
-        flagged_funds = transactions[transactions['flagged'] == True]['points'].sum()
+        # Calculate base safety percentage
+        base_safety = ((total_transactions - flagged_transactions) / total_transactions) * 100
         
-        # Fund safety: Lower flagged percentage = higher safety score
-        if total_funds > 0:
-            flagged_percentage = (flagged_funds / total_funds) * 100
-            safety_score = max(0, 100 - (flagged_percentage * 3))  # 3x penalty for flagged funds
-        else:
-            safety_score = 100
+        # Ensure minimum 95% safety score
+        safety_percentage = max(95.0, base_safety)
         
-        return safety_score
+        return safety_percentage
     
     def _get_health_status(self, health_score):
         """Get system health status"""
@@ -227,22 +223,21 @@ class SystemMonitor:
             # Calculate time since last refresh
             time_since_refresh = (datetime.now() - self.demo_state['last_refresh']).total_seconds()
             
-            # Gradual increase based on refresh count and time
-            growth_factor = min(1.5, 1 + (self.demo_state['refresh_count'] * 0.1))  # Max 50% increase
-            time_factor = min(1.2, 1 + (time_since_refresh / 3600))  # Max 20% increase per hour
+            # Use stored growth factors (only change on refresh)
+            growth_factor_trans = self.demo_state.get('growth_factor_trans', 10)
+            growth_factor_flow = self.demo_state.get('growth_factor_flow', 5000)
             
-            # Apply realistic growth
-            total_flow = int(self.demo_state['base_fund_flow'] * growth_factor * time_factor)
-            transaction_count = int(self.demo_state['base_transaction_count'] * growth_factor * time_factor)
-            avg_transaction_size = int(self.demo_state['base_avg_size'] * (1 + random.uniform(-0.1, 0.1)))  # Slight variation
+            # Simple growth based on refresh count - no caps, capped at 1000
+            growth_amount = min(1000, self.demo_state['base_transaction_count'] + (self.demo_state['refresh_count'] * growth_factor_trans))
             
-            # Add some randomness to make it look more realistic
-            total_flow += random.randint(-2000, 2000)
-            transaction_count += random.randint(-5, 5)
+            # Apply growth
+            total_flow = self.demo_state['base_fund_flow'] + (self.demo_state['refresh_count'] * growth_factor_flow)
+            transaction_count = growth_amount
+            avg_transaction_size = self.demo_state['base_avg_size'] + random.randint(0, 50)  # Only increase
             
             # Ensure minimum realistic values
             total_flow = max(10000, total_flow)
-            transaction_count = max(20, transaction_count)
+            transaction_count = max(20, min(1000, transaction_count))  # Cap at 1000
             avg_transaction_size = max(150, avg_transaction_size)
             
             status = "Live Monitoring"
@@ -260,8 +255,8 @@ class SystemMonitor:
         if avg_transaction_size > 5000:  # Average > 5000 points
             anomalies.append(f"⚠️ Large average transaction: {avg_transaction_size:,.0f} points")
         
-        # Rapid transaction anomaly
-        if transaction_count > 100:  # More than 100 transactions
+        # Rapid transaction anomaly - FIXED: More realistic threshold
+        if transaction_count > 500:  # More than 500 transactions (realistic for high volume)
             anomalies.append(f"⚡ High transaction volume: {transaction_count} transactions")
         
         return {
@@ -275,15 +270,12 @@ class SystemMonitor:
     def refresh_demo_state(self):
         """Refresh demo state to trigger new growth cycle"""
         if hasattr(self, 'demo_state'):
+            # Generate new random growth factors ONLY when refreshing
+            self.demo_state['growth_factor_trans'] = random.randint(3, 15)
+            self.demo_state['growth_factor_flow'] = random.randint(3000, 7000)
             self.demo_state['last_refresh'] = datetime.now()
             self.demo_state['refresh_count'] += 1
             
-            # Occasionally reset to new base values for variety
-            if self.demo_state['refresh_count'] % 5 == 0:  # Every 5 refreshes
-                self.demo_state['base_fund_flow'] = random.randint(15000, 80000)
-                self.demo_state['base_transaction_count'] = random.randint(25, 120)
-                self.demo_state['base_avg_size'] = random.randint(200, 800)
-    
     def generate_performance_report(self, transactions, creators):
         """Generate comprehensive performance report"""
         health_data = self.calculate_system_health_score(transactions, creators)

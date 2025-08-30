@@ -12,6 +12,8 @@ from sidebar_manager import SidebarManager
 from data_manager import DataManager
 from content_quality_analyzer import ContentQualityAnalyzer  # NEW!
 from system_monitor import SystemMonitor
+from user_auth import UserAuth
+from points_shop import PointsShop
 
 # Initialize UI and Loading managers
 ui_manager = UIManager()
@@ -53,8 +55,21 @@ if "content_quality_analyzer" not in st.session_state:
     st.session_state.content_quality_analyzer = ContentQualityAnalyzer()
 
 # Initialize data and user profiles
-creators, viewers, transactions = st.session_state.data_manager.initialize_data()
+if 'creators' not in st.session_state:
+    creators, viewers, transactions = st.session_state.data_manager.initialize_data()
+    st.session_state.creators = creators
+    st.session_state.viewers = viewers
+    st.session_state.transactions = transactions
+else:
+    creators = st.session_state.creators
+    viewers = st.session_state.viewers
+    transactions = st.session_state.transactions
+
 user_risk_profiles = st.session_state.data_manager.initialize_user_risk_profiles()
+
+# Initialize user authentication
+user_auth = UserAuth()
+points_shop = PointsShop()
 
 # -----------------------------
 # Render Sidebar
@@ -64,7 +79,12 @@ st.session_state.sidebar_manager.render_sidebar(creators, viewers, transactions,
 # -----------------------------
 # Main app layout
 # -----------------------------
-st.title("FairShare – Transparent Creator Reward System")
+# Render authentication and user controls
+user_auth.render_user_controls()
+user_auth.render_auth_modal()
+
+# Render points shop
+points_shop.render_shop()
 
 # Display analysis results if available
 if st.session_state.get("show_analysis", False):
@@ -78,6 +98,9 @@ if st.session_state.get("show_analysis", False):
         if st.button("❌ Close Analysis", key="close_analysis_main", type="primary"):
             st.session_state.show_analysis = False
             st.rerun()
+
+# Get updated transactions from session state
+transactions = st.session_state.transactions
 
 # Create main dashboard using DashboardManager
 st.session_state.dashboard_manager.create_main_dashboard(creators, transactions)

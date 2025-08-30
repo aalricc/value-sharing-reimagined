@@ -384,11 +384,11 @@ class DashboardManager:
                     st.markdown("""
                     <style>
                     .transaction-container {
-                        background: white;
+                        background: transparent;  /* Changed from white to transparent */
                         border-radius: 12px;
                         padding: 15px;
-                        box-shadow: 0 4px 15px rgba(255, 0, 80, 0.1);
-                        border: 2px solid #f0f0f0;
+                        box-shadow: none;  /* Removed shadow */
+                        border: none;  /* Removed border */
                         max-height: 400px;
                         overflow-y: auto;
                     }
@@ -410,104 +410,104 @@ class DashboardManager:
                     """, unsafe_allow_html=True)
                     
                     # Display transactions in a scrollable container
-                    with st.container():
-                        st.markdown('<div class="transaction-container">', unsafe_allow_html=True)
+                    # with st.container():  # REMOVE THIS LINE
+                    # st.markdown('<div class="transaction-container">', unsafe_allow_html=True)  # REMOVE THIS LINE
+                    
+                    # Create a beautiful table header
+                    st.markdown("""
+                    <div style="
+                        display: grid;
+                        grid-template-columns: 0.5fr 1fr 1fr 0.8fr 0.8fr;
+                        gap: 10px;
+                        padding: 10px;
+                        background: linear-gradient(90deg, #FF0050, #00F2EA);
+                        color: white;
+                        border-radius: 8px;
+                        margin: -10px 0 0 0;  /* Negative top margin to pull up */
+                        font-weight: 600;
+                        font-size: 14px;
+                    ">
+                        <div>#</div>
+                        <div>Time (SGT)</div>
+                        <div>Viewer → Creator</div>
+                        <div>Points</div>
+                        <div>Status</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    # Display only top 20 transactions instead of all
+                    top_transactions = df_hist.head(20)
+                    
+                    # Display transactions with alternating row colors
+                    for idx, (_, transaction) in enumerate(top_transactions.iterrows()):
+                        row_color = "#f8f9fa" if idx % 2 == 0 else "#ffffff"
+                        border_color = "#FF0050" if idx % 2 == 0 else "#00F2EA"
                         
-                        # Create a beautiful table header
-                        st.markdown("""
+                        # Format timestamp for better display
+                        time_str = str(transaction["Time (SGT)"])
+                        if len(time_str) > 20:
+                            time_str = time_str[:20] + "..."
+                        
+                        # Create status badge
+                        if transaction["Status"]:
+                            status_badge = """
+                            <span style="
+                                background: #FF0050 !important;
+                                color: black !important;
+                                padding: 2px 8px;
+                                border-radius: 12px;
+                                font-size: 11px;
+                                font-weight: 500;
+                            ">⚠️ On Hold</span>
+                            """
+                        else:
+                            status_badge = """
+                            <span style="
+                                background: #00F2EA !important;
+                                color: black !important;
+                                padding: 2px 8px;
+                                border-radius: 12px;
+                                font-size: 11px;
+                                font-weight: 500;
+                            ">✅ Successful</span>
+                            """
+                        
+                        st.markdown(f"""
                         <div style="
                             display: grid;
                             grid-template-columns: 0.5fr 1fr 1fr 0.8fr 0.8fr;
                             gap: 10px;
                             padding: 10px;
-                            background: linear-gradient(90deg, #FF0050, #00F2EA);
-                            color: white;
-                            border-radius: 8px;
-                            margin-bottom: 10px;
-                            font-weight: 600;
-                            font-size: 14px;
+                            background: {row_color};
+                            border-left: 3px solid {border_color};
+                            border-radius: 6px;
+                            margin-bottom: 5px;
+                            font-size: 13px;
+                            transition: all 0.2s ease;
                         ">
-                            <div>#</div>
-                            <div>Time (SGT)</div>
-                            <div>Viewer → Creator</div>
-                            <div>Points</div>
-                            <div>Status</div>
+                            <div style="font-weight: 600; color: #FF0050;">{idx+1}</div>
+                            <div style="color: #666;">{time_str}</div>
+                            <div style="font-weight: 500;">
+                                <span style="color: #FF0050;">{transaction['Viewer']}</span> 
+                                <span style="color: #999;">→</span> 
+                                <span style="color: #00F2EA;">{transaction['Creator']}</span>
+                            </div>
+                            <div style="font-weight: 600; color: #333;">{transaction['Points']:,}</div>
+                            <div>{status_badge}</div>
                         </div>
                         """, unsafe_allow_html=True)
+                    
+                    # st.markdown('</div>', unsafe_allow_html=True)  # REMOVE THIS LINE
+                    
+                    # Show "View More" button if there are more than 20 transactions
+                    if len(df_hist) > 20:
+                        if st.button("📋 View All Transactions", type="secondary"):
+                            st.session_state.show_all_transactions = not st.session_state.get("show_all_transactions", False)
+                            st.rerun()
                         
-                        # Display only top 20 transactions instead of all
-                        top_transactions = df_hist.head(20)
-                        
-                        # Display transactions with alternating row colors
-                        for idx, (_, transaction) in enumerate(top_transactions.iterrows()):
-                            row_color = "#f8f9fa" if idx % 2 == 0 else "#ffffff"
-                            border_color = "#FF0050" if idx % 2 == 0 else "#00F2EA"
-                            
-                            # Format timestamp for better display
-                            time_str = str(transaction["Time (SGT)"])
-                            if len(time_str) > 20:
-                                time_str = time_str[:20] + "..."
-                            
-                            # Create status badge
-                            if transaction["Status"]:
-                                status_badge = """
-                                <span style="
-                                    background: #FF0050 !important;
-                                    color: black !important;
-                                    padding: 2px 8px;
-                                    border-radius: 12px;
-                                    font-size: 11px;
-                                    font-weight: 500;
-                                ">⚠️ On Hold</span>
-                                """
-                            else:
-                                status_badge = """
-                                <span style="
-                                    background: #00F2EA !important;
-                                    color: black !important;
-                                    padding: 2px 8px;
-                                    border-radius: 12px;
-                                    font-size: 11px;
-                                    font-weight: 500;
-                                ">✅ Successful</span>
-                                """
-                            
-                            st.markdown(f"""
-                            <div style="
-                                display: grid;
-                                grid-template-columns: 0.5fr 1fr 1fr 0.8fr 0.8fr;
-                                gap: 10px;
-                                padding: 10px;
-                                background: {row_color};
-                                border-left: 3px solid {border_color};
-                                border-radius: 6px;
-                                margin-bottom: 5px;
-                                font-size: 13px;
-                                transition: all 0.2s ease;
-                            ">
-                                <div style="font-weight: 600; color: #FF0050;">{idx+1}</div>
-                                <div style="color: #666;">{time_str}</div>
-                                <div style="font-weight: 500;">
-                                    <span style="color: #FF0050;">{transaction['Viewer']}</span> 
-                                    <span style="color: #999;">→</span> 
-                                    <span style="color: #00F2EA;">{transaction['Creator']}</span>
-                                </div>
-                                <div style="font-weight: 600; color: #333;">{transaction['Points']:,}</div>
-                                <div>{status_badge}</div>
-                            </div>
-                            """, unsafe_allow_html=True)
-                        
-                        st.markdown('</div>', unsafe_allow_html=True)
-                        
-                        # Show "View More" button if there are more than 20 transactions
-                        if len(df_hist) > 20:
-                            if st.button("📋 View All Transactions", type="secondary"):
-                                st.session_state.show_all_transactions = not st.session_state.get("show_all_transactions", False)
-                                st.rerun()
-                            
-                            if st.session_state.get("show_all_transactions", False):
-                                with st.expander("📋 All Transactions", expanded=True):
-                                    st.dataframe(df_hist, use_container_width=True, hide_index=True)
+                        if st.session_state.get("show_all_transactions", False):
+                            with st.expander("📋 All Transactions", expanded=True):
+                                st.dataframe(df_hist, use_container_width=True, hide_index=True)
                     
                     # Add summary stats below the table
                     total_transactions = len(df_hist)
@@ -643,8 +643,8 @@ class DashboardManager:
                 with tier_col1:
                     st.markdown("""
                     <div style="
-                        background: linear-gradient(135deg, #FFD700, #FFA500);
-                        color: white;
+                        background: linear-gradient(135deg, #B9F2FF, #87CEEB);  /* Diamond blue colors */
+                        color: #333;  /* Dark text for readability */
                         padding: 10px;
                         border-radius: 10px;
                         text-align: center;
@@ -654,6 +654,7 @@ class DashboardManager:
                         flex-direction: column;
                         justify-content: center;
                         align-items: center;
+                        border: 2px solid #00BFFF;  /* Diamond border */
                     ">
                         <strong>Diamond</strong><br>
                         90+ Score<br>
@@ -727,8 +728,8 @@ class DashboardManager:
                 with tier_col5:
                     st.markdown("""
                     <div style="
-                        background: linear-gradient(135deg, #00F2EA, #10B981);
-                        color: white;
+                        background: #f8f9fa;  /* Plain light gray background */
+                        color: #333;  /* Dark text */
                         padding: 10px;
                         border-radius: 10px;
                         text-align: center;
@@ -738,6 +739,7 @@ class DashboardManager:
                         flex-direction: column;
                         justify-content: center;
                         align-items: center;
+                        border: 1px solid #dee2e6;  /* Subtle border */
                     ">
                         <strong>Standard</strong><br>
                         <60 Score<br>
@@ -781,23 +783,38 @@ class DashboardManager:
             # Display quality scores
             for _, row in quality_df.iterrows():
                 tier_color = {
-                    'Diamond': '#FFD700',  # Gold
-                    'Gold': '#FFA500',      # Orange
-                    'Silver': '#C0C0C0',   # Silver
-                    'Bronze': '#CD7F32',   # Bronze
-                    'Standard': '#00F2EA'  # Cyan
+                    'Diamond': '#B9F2FF',  # Diamond blue (same as tier system)
+                    'Gold': '#FFA500',      # Orange (keep same)
+                    'Silver': '#C0C0C0',   # Silver (keep same)
+                    'Bronze': '#CD7F32',   # Bronze (keep same)
+                    'Standard': '#f8f9fa'  # Plain light gray (same as tier system)
                 }
+                
+                # Use different styling for Diamond vs Standard tiers
+                if row['Tier'] == 'Diamond':
+                    background_style = f"linear-gradient(90deg, {tier_color.get(row['Tier'], '#B9F2FF')}, #87CEEB)"
+                    text_color = "#333"  # Dark text for diamond
+                    border_style = "2px solid #00BFFF"  # Diamond border
+                elif row['Tier'] == 'Standard':
+                    background_style = f"{tier_color.get(row['Tier'], '#f8f9fa')}"
+                    text_color = "#333"  # Dark text for standard
+                    border_style = "1px solid #dee2e6"  # Subtle border
+                else:
+                    background_style = f"linear-gradient(90deg, {tier_color.get(row['Tier'], '#00F2EA')}, rgba(255,255,255,0.1))"
+                    text_color = "white"  # White text for other tiers
+                    border_style = "none"
                 
                 st.markdown(f"""
                 <div style="
-                    background: linear-gradient(90deg, {tier_color.get(row['Tier'], '#00F2EA')}, rgba(255,255,255,0.1));
-                    color: white;
+                    background: {background_style};
+                    color: {text_color};
                     padding: 12px;
                     border-radius: 10px;
                     margin: 8px 0;
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
+                    border: {border_style};
                 ">
                     <div>
                         <strong>{row['Creator']}</strong>
@@ -1229,130 +1246,197 @@ class DashboardManager:
         with col3:
             st.metric("Points Earned", f"{analysis_data['points']:,}")
 
-        # NEW: Earnings Information
+        # NEW: Earnings Information - TIKTOK-STYLE CALCULATION
         if 'estimated_earnings' in analysis_data and analysis_data['estimated_earnings'] is not None:
             st.markdown("---")
-            st.markdown("**💰 Earnings Analysis**")
+            st.markdown("**💰 Earnings Analysis (TikTok-Style)**")
             
-            earnings = analysis_data['estimated_earnings']
+            # Get user inputs
+            views = analysis_data['views']
+            likes = analysis_data['likes']
+            shares = analysis_data['shares']
+            points_input = analysis_data['points']
+            
+            # Calculate engagement score
+            engagement_score = analysis_data['engagement_score']
+            
+            # TIKTOK-STYLE: Base earnings from views (not engagement score)
+            # TikTok pays $0.02-$0.04 per 1,000 views
+            base_rate_per_1k_views = 0.03  # $0.03 per 1K views (middle range)
+            base_earnings = (views / 1000) * base_rate_per_1k_views
+            
+            # TIKTOK-STYLE: Engagement bonus (small bonus for high engagement)
+            engagement_rate = ((likes + shares) / views * 100) if views > 0 else 0
+            
+            # Quality multiplier based on TikTok-style logic
+            if views >= 1000000:  # 1M+ views (high reach)
+                if engagement_rate >= 5:
+                    quality_multiplier = 1.3  # 30% bonus for viral content
+                elif engagement_rate >= 3:
+                    quality_multiplier = 1.2  # 20% bonus for high reach, good engagement
+                elif engagement_rate >= 1:
+                    quality_multiplier = 1.1  # 10% bonus for high reach, decent engagement
+                else:
+                    quality_multiplier = 1.0  # No bonus for high reach, low engagement
+            elif views >= 500000:  # 500K+ views (medium reach)
+                if engagement_rate >= 8:
+                    quality_multiplier = 1.2
+                elif engagement_rate >= 5:
+                    quality_multiplier = 1.1
+                else:
+                    quality_multiplier = 1.0
+            else:  # <500K views (low reach)
+                if engagement_rate >= 10:
+                    quality_multiplier = 1.15
+                elif engagement_rate >= 5:
+                    quality_multiplier = 1.05
+                else:
+                    quality_multiplier = 1.0
+            
+            # TIKTOK-STYLE: Small engagement bonus (not views bonus)
+            # TikTok gives small bonuses for high engagement, not for raw views
+            engagement_bonus = base_earnings * (quality_multiplier - 1)
+            
+            # TIKTOK-STYLE: Points earnings (similar to live gifts)
+            # Convert points to dollars (similar to TikTok's gift system)
+            points_earnings = points_input * 0.01  # $0.01 per point
+            
+            # Calculate total earnings (TikTok-style)
+            total_earnings = base_earnings + engagement_bonus + points_earnings
+            
+            # Create earnings data structure
+            earnings = {
+                'quality_score': min(100, engagement_rate * 10),
+                'engagement_rate': engagement_rate,
+                'base_earnings': base_earnings,
+                'quality_multiplier': quality_multiplier,
+                'engagement_bonus': engagement_bonus,
+                'points_earnings': points_earnings,
+                'total_earnings': total_earnings,
+                'base_rate_per_1k': base_rate_per_1k_views
+            }
+            
+            # Display earnings metrics - TIKTOK-STYLE with $ signs
             col1, col2, col3 = st.columns(3)
             with col1:
-                st.metric("Quality Score", f"{earnings.get('quality_score', 0):.0f}/100")
+                st.metric("Views Earnings", f"${earnings.get('base_earnings', 0):.2f}")
             with col2:
-                st.metric("Engagement Rate", f"{earnings.get('engagement_rate', 0):.1f}%")
+                st.metric("Engagement Bonus", f"${earnings.get('engagement_bonus', 0):.2f}")
             with col3:
                 st.metric("Total Monthly Earnings", f"${earnings.get('total_earnings', 0):.2f}")
             
-            # Second row of earnings metrics
+            # Second row with $ signs
             col1, col2, col3 = st.columns(3)
             with col1:
-                st.metric("Base Earnings", f"${earnings.get('base_earnings', 0):.2f}")
+                st.metric("Views", f"{views:,}")
             with col2:
-                st.metric("Quality Bonus", f"${earnings.get('quality_bonus', 0):.2f}")
+                st.metric("Engagement Rate", f"{earnings.get('engagement_rate', 0):.1f}%")
             with col3:
-                st.metric("Views Bonus", f"${earnings.get('views_bonus', 0):.2f}")
+                st.metric("Points Earnings", f"${earnings.get('points_earnings', 0):.2f}")
             
-            # Earnings breakdown explanation - Using Streamlit native formatting
+            # Earnings breakdown explanation with $ signs
             st.markdown("---")
-            st.markdown("**💰 How Your Earnings Are Calculated**")
+            st.markdown("**📊 TikTok-Style Earnings Calculation**")
+            
+            # Base earnings row with $ signs
+            col1, col2 = st.columns(2)
+            with col1:
+                st.info(f"**Views:** {views:,}")
+            with col2:
+                st.info(f"**Base Rate:** ${earnings.get('base_rate_per_1k', 0):.3f} per 1K views")
+            
+            # Quality metrics row
+            col1, col2 = st.columns(2)
+            with col1:
+                st.success(f"**Engagement Rate:** {earnings.get('engagement_rate', 0):.1f}%")
+                st.caption(f"Likes + Shares relative to Views")
+            with col2:
+                st.success(f"**Quality Multiplier:** {earnings.get('quality_multiplier', 1):.2f}x")
+                st.caption("Small bonus for high engagement")
+            
+            # Final total with beautiful styling and $ signs
+            st.markdown("---")
+            st.markdown(f"""
+            <div style="
+                background: linear-gradient(135deg, #FF0050, #00F2EA);
+                color: white;
+                padding: 20px;
+                border-radius: 15px;
+                text-align: center;
+                box-shadow: 0 8px 30px rgba(255, 0, 80, 0.3);
+            ">
+                <h3 style="margin: 0; color: white;">💰 Total Monthly Earnings: ${earnings.get('total_earnings', 0):.2f}</h3>
+                <p style="margin: 5px 0 0 0; opacity: 0.9;">Views: ${earnings.get('base_earnings', 0):.2f} + Engagement: ${earnings.get('engagement_bonus', 0):.2f} + Points: ${earnings.get('points_earnings', 0):.2f}</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            st.markdown("---")
+                      # Simple TikTok-styled explanation - ultra clean
+            st.markdown("""
+            <div style="
+                background: linear-gradient(135deg, #FF0050, #00F2EA);
+                color: white;
+                padding: 15px;
+                border-radius: 15px;
+                text-align: center;
+                box-shadow: 0 8px 30px rgba(255, 0, 80, 0.3);
+            ">
+                <h3 style="margin: 0; color: white;"> Earnings Formula</h3>
+                <p style="margin: 5px 0 0 0; opacity: 0.9;">
+                    <strong>Total = Views + Engagement Bonus + Points (50%)</strong>
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+   
 
-            # Create a styled container
-            with st.container():
-                # Base calculations row
+            # Pro tip with $ signs
+            st.info("💡 **Pro Tip:** TikTok pays primarily for views, with small bonuses for high engagement!")
+            st.info("💡 **Curious about the details on how TikTok Revenue Sharing works?:** Find out more in the dropbox below or in the 'Quality & Fairness'  and  'Revenue'  setion")
+            
+            # Detailed breakdown with $ signs - REPLACED WITH BETTER CALCULATION DISPLAY
+            with st.expander("🔍 How Your Earnings Are Calculated", expanded=False):
+                st.markdown("**📊 TikTok-Style Earnings Formula**")
+                
+                # Show the actual calculation steps
                 col1, col2 = st.columns(2)
                 with col1:
-                    st.info(f"**Base Rate:** ${earnings.get('base_conversion_rate', 0):.3f} per point")
-                with col2:
-                    st.info(f"**Your Points:** {analysis_data['points']:,} × ${earnings.get('base_conversion_rate', 0):.3f} = ${earnings.get('base_earnings', 0):.2f}")
+                    st.markdown("**1. Views Earnings (Main Revenue):**")
+                    st.markdown(f"""
+                    - Your Views: {views:,}
+                    - TikTok Rate: ${earnings.get('base_rate_per_1k', 0):.3f} per 1K views
+                    - Calculation: ({views:,} ÷ 1,000) × ${earnings.get('base_rate_per_1k', 0):.3f}
+                    - **Result: ${earnings.get('base_earnings', 0):.2f}**
+                    """)
                 
-                # Quality metrics row
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.success(f"**Quality Score:** {earnings.get('quality_score', 0):.0f}/100")
-                    st.caption(f"Engagement Rate: {earnings.get('engagement_rate', 0):.1f}%")
                 with col2:
-                    st.success(f"**Quality Multiplier:** {earnings.get('quality_multiplier', 1):.2f}x")
-                    st.caption("1x to 2x based on engagement")
+                    st.markdown("**2. Engagement Bonus (Quality Reward):**")
+                    st.markdown(f"""
+                    - Your Engagement: {earnings.get('engagement_rate', 0):.1f}%
+                    - Quality Multiplier: {earnings.get('quality_multiplier', 1):.2f}x
+                    - Calculation: ${earnings.get('base_earnings', 0):.2f} × ({earnings.get('quality_multiplier', 1):.2f} - 1)
+                    - **Result: ${earnings.get('engagement_bonus', 0):.2f}**
+                    """)
                 
-                # Bonus calculations row
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.warning(f"**Quality Bonus:** ${earnings.get('quality_bonus', 0):.2f}")
-                    st.caption("Reward for great engagement")
-                with col2:
-                    st.warning(f"**Views Bonus:** ${earnings.get('views_bonus', 0):.2f}")
-                    st.caption("Small bonus for reach")
-                
-                # Final total in a highlighted box
+                # Points explanation
                 st.markdown("---")
-                st.markdown("""
-                <div style="
-                    background: linear-gradient(135deg, #FF0050 0%, #00F2EA 100%);
-                    border-radius: 15px;
-                    padding: 20px;
-                    margin: 20px 0;
-                    color: white;
-                    text-align: center;
-                    box-shadow: 0 8px 25px rgba(255, 0, 80, 0.3);
-                ">
-                    <h3 style="margin: 0; color: white;">🎯 Final Total: ${total_earnings}</h3>
-                </div>
-                """.format(total_earnings=f"{earnings.get('total_earnings', 0):.2f}"), unsafe_allow_html=True)
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.markdown("**3. Points Earnings (Direct Support):**")
+                    st.markdown(f"""
+                    - Points Received: {points_input:,}
+                    - Conversion Rate: $0.01 per point
+                    - Calculation: {points_input:,} × $0.01
+                    - **Result: ${earnings.get('points_earnings', 0):.2f}**
+                    """)
                 
-                # Pro tip
-                st.info("💡 **Pro Tip:** Higher engagement rates earn higher bonuses!")
-                st.info("💡 **Curious about the details on how TikTok Revenue Sharing works?:** Find out more in  'Quality & Fairness'  and  'Revenue'  setion")
-
-            # Detailed breakdown in an expander
-            with st.expander("📊 Detailed Earnings Breakdown", expanded=False):
-                st.write(f"""
-                **Step-by-Step Calculation:**
-                
-                1. **Base Earnings from Points:**
-                   - Points earned: {analysis_data['points']:,}
-                   - Conversion rate: ${earnings.get('base_conversion_rate', 0):.3f} per point
-                   - Base earnings: {analysis_data['points']:,} × ${earnings.get('base_conversion_rate', 0):.3f} = ${earnings.get('base_earnings', 0):.2f}
-                
-                2. **Quality Bonus Calculation:**
-                   - Engagement rate: {earnings.get('engagement_rate', 0):.1f}%
-                   - Quality score: {earnings.get('quality_score', 0):.0f}/100
-                   - Multiplier: {earnings.get('quality_multiplier', 1):.2f}x
-                   - Quality bonus: ${earnings.get('base_earnings', 0):.2f} × ({earnings.get('quality_multiplier', 1):.2f} - 1) = ${earnings.get('quality_bonus', 0):.2f}
-                
-                3. **Views Bonus:**
-                   - Views: {analysis_data['views']:,}
-                   - Bonus rate: $50 per million views
-                   - Views bonus: ({analysis_data['views']:,} ÷ 1,000,000) × $50 = ${earnings.get('views_bonus', 0):.2f}
-                
-                4. **Total Earnings:**
-                   - Base earnings: ${earnings.get('base_earnings', 0):.2f}
-                   - Quality bonus: ${earnings.get('quality_bonus', 0):.2f}
-                   - Views bonus: ${earnings.get('views_bonus', 0):.2f}
-                   - **Total: ${earnings.get('total_earnings', 0):.2f}**
-                """)
-
-        # Add transparent explanation with better styling - Updated to match final total gradient
-        st.markdown("""
-<div style="
-    background: linear-gradient(135deg, #FF0050 0%, #00F2EA 100%);
-    border-radius: 15px;
-    padding: 20px;
-    margin: 20px 0;
-    color: white;
-    text-align: center;
-    box-shadow: 0 8px 25px rgba(255, 0, 80, 0.3);
-">
-    <h4 style="margin: 0 0 15px 0; color: white; font-size: 18px;">
-        🔍 How Your Score is Calculated
-    </h4>
-    <p style="margin: 0; font-size: 16px; opacity: 0.95; font-weight: 600;">
-        <strong>Engagement Score = 0.3 × Views + Likes + 2 × Shares</strong>
-    </p>
-    <p style="margin: 10px 0 0 0; font-size: 14px; opacity: 0.9;">
-        This formula rewards quality engagement over raw viewership
-    </p>
-</div>
-""", unsafe_allow_html=True)
+                with col2:
+                    st.markdown("**4. Final Total:**")
+                    st.markdown(f"""
+                    - Views Earnings: ${earnings.get('base_earnings', 0):.2f}
+                    - Engagement Bonus: ${earnings.get('engagement_bonus', 0):.2f}
+                    - Points Earnings: ${earnings.get('points_earnings', 0):.2f}
+                    - **Total: ${earnings.get('total_earnings', 0):.2f}**
+                    """)
 
         st.markdown("---")
 
@@ -1749,8 +1833,8 @@ class DashboardManager:
         
         st.markdown("---")
         
-        # Compliance score and system health
-        st.subheader("🏥 System Health & Compliance Score")
+        # Compliance score 
+        st.subheader("Compliance Score")
         
         col1, col2 = st.columns(2)
         
@@ -1782,6 +1866,7 @@ class DashboardManager:
 
     def create_system_health_dashboard(self, creators, transactions):
         """Create the System Health & Performance Monitoring dashboard"""
+        # Header first
         st.header("🏥 System Health & Performance Monitoring")
         st.markdown("Real-time monitoring of system health, fund safety, and performance metrics")
         
@@ -1790,6 +1875,27 @@ class DashboardManager:
             st.session_state.system_monitor = SystemMonitor()
         
         monitor = st.session_state.system_monitor
+        
+        # Refresh button positioned after monitor initialization
+        col1, col2, col3, col4, col5 = st.columns([1, 1, 1, 1, 1])
+        
+        with col1:
+            st.write("")  # Empty space
+        with col2:
+            st.write("")  # Empty space
+        with col3:
+            st.write("")  # Empty space
+        with col4:
+            st.write("")  # Empty space
+        with col5:
+            # Refresh button positioned at top right, after monitor is ready
+            if st.button("🔄 Refresh", type="primary", key="refresh_system_health"):
+                # Refresh demo state for realistic growth
+                if hasattr(monitor, 'refresh_demo_state'):
+                    monitor.refresh_demo_state()
+                st.rerun()
+        
+        st.markdown("---")  # Add separator line
         
         # Generate performance report
         performance_report = monitor.generate_performance_report(transactions, creators)
@@ -1868,11 +1974,11 @@ class DashboardManager:
             # Anomalies
             anomalies = performance_report['fund_flow']['anomalies']
             if anomalies:
-                st.error("🚨 **Detected Anomalies:**")
+                st.warning(" **Fund Flow Status:** Might experience delays due to high volume of transactions")
                 for anomaly in anomalies:
                     st.markdown(f"• {anomaly}")
             else:
-                st.success("✅ **No anomalies detected** - Fund flow is normal")
+                st.success("✅ **Fund Flow Status:** Fund flow is normal")
             
             # Fund flow details
             st.markdown("**24-Hour Summary:**")
@@ -1889,10 +1995,3 @@ class DashboardManager:
         
         # Last updated
         st.caption(f"Last updated: {performance_report['timestamp']}")
-        
-        # Refresh button
-        if st.button("🔄 Refresh System Status", type="primary"):
-            # NEW: Refresh demo state for realistic growth
-            if hasattr(monitor, 'refresh_demo_state'):
-                monitor.refresh_demo_state()
-            st.rerun()
